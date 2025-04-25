@@ -9,6 +9,7 @@ const getSequelizeConfig = () => {
   
   try {
     const url = new URL(databaseUrl);
+    const isProduction = process.env.NODE_ENV === 'production';
     return {
       username: url.username,
       password: url.password,
@@ -22,7 +23,15 @@ const getSequelizeConfig = () => {
         min: 0,
         acquire: 30000,
         idle: 10000
-      }
+      },
+      dialectOptions: isProduction
+        ? {
+            ssl: {
+              require: true,
+              rejectUnauthorized: false
+            }
+          }
+        : {},
     };
   } catch (error) {
     logger.error('Invalid DATABASE_URL format', { error });

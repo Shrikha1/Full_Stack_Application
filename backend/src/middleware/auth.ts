@@ -1,5 +1,6 @@
+import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express'
-import jwt from 'jsonwebtoken'
+import { verifyAccessToken } from '../utils/jwt'
 import { User } from '../models'
 import { logger } from '../utils/logger'
 
@@ -25,31 +26,34 @@ interface AuthenticatedRequest extends Request {
 }
 
 export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
+  let token: string | undefined;
+  // Check Authorization header (Bearer) or cookie (token)
   const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
+  if (authHeader && authHeader.startsWith('Bearer ')) {
+    token = authHeader.split(' ')[1];
+  } else if (req.cookies && req.cookies.token) {
+    token = req.cookies.token;
+  }
   if (!token) {
     logger.warn('No token provided', { path: req.path })
     return res.status(401).json({ message: 'No token provided' });
   }
   try {
-    const decoded = jwt.verify(token, process.env.JWT_SECRET as string) as JwtPayload;
-    if (decoded.type !== 'access') {
-      logger.warn('Invalid token type', { path: req.path, type: decoded.type })
+    const decoded = verifyAccessToken(token) as JwtPayload | string;
+    if (typeof decoded !== 'object' || decoded.type !== 'access') {
+      logger.warn('Invalid token type', { path: req.path })
       return res.status(401).json({ message: 'Invalid token type' });
     }
     const user = await User.findByPk(decoded.userId);
     if (!user) {
-      logger.warn('User not found', { userId: decoded.userId })
+      logger.warn('User not found for token', { userId: decoded.userId })
       return res.status(401).json({ message: 'User not found' });
     }
-    req.user = {
-      id: user.id,
-      email: user.email,
-    }
+    req.user = { id: user.id, email: user.email };
     return next();
-  } catch (err) {
-    logger.warn('Invalid or expired token', { path: req.path })
-    return res.status(403).json({ message: 'Invalid or expired token' });
+  } catch (err: any) {
+    logger.warn('JWT verification failed', { path: req.path, error: err.message })
+    return res.status(401).json({ message: 'Invalid or expired token' });
   }
 };
 

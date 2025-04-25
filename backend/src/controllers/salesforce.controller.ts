@@ -14,15 +14,23 @@ function getSalesforceConnection() {
 }
 
 export const salesforceController = {
-  async getAccounts(_req: Request, res: Response) {
+  async getAccounts(req: Request, res: Response) {
     try {
       const conn = getSalesforceConnection();
       await conn.login(process.env.SF_USERNAME!, process.env.SF_PASSWORD! + process.env.SF_SECURITY_TOKEN!);
+      // Pagination params
+      const page = parseInt(req.query.page as string) || 1;
+      const pageSize = parseInt(req.query.pageSize as string) || 50;
+      const skip = (page - 1) * pageSize;
+      // Get total count for pagination
+      const total = await conn.sobject('Account').count();
+      // Get paginated results
       const result = await conn.sobject('Account')
         .find({}, { Id: 1, Name: 1, Industry: 1, Type: 1 })
-        .limit(50)
+        .skip(skip)
+        .limit(pageSize)
         .execute();
-      res.status(200).json({ accounts: result });
+      res.status(200).json({ accounts: result, page, pageSize, total });
     } catch (error) {
       // Never expose secrets or stack traces
       res.status(500).json({ message: 'Failed to fetch Salesforce accounts', code: 'SALESFORCE_ERROR' });

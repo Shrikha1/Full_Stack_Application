@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import { User } from '../models';
-import jwt from 'jsonwebtoken';
+import { signAccessToken, signRefreshToken, verifyRefreshToken } from '../utils/jwt';
 import bcrypt from 'bcrypt';
 import { logger } from '../utils/logger';
 import { AppError } from '../utils/errorHandler';
@@ -8,8 +8,8 @@ import { AppError } from '../utils/errorHandler';
 const REFRESH_TOKEN_COOKIE = 'refreshToken';
 
 function generateTokens(userId: string, email: string) {
-  const accessToken = jwt.sign({ userId, email, type: 'access' }, process.env.JWT_SECRET!, { expiresIn: '15m' });
-  const refreshToken = jwt.sign({ userId, email, type: 'refresh' }, process.env.JWT_REFRESH_SECRET!, { expiresIn: '7d' });
+  const accessToken = signAccessToken({ userId, email, type: 'access' });
+  const refreshToken = signRefreshToken({ userId, email, type: 'refresh' });
   return { accessToken, refreshToken };
 }
 
@@ -102,8 +102,15 @@ export const authController = {
       if (!refreshToken) {
         throw new AppError(401, 'No refresh token provided', 'NO_REFRESH_TOKEN');
       }
-      const payload = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!);
-      const user = await User.findByPk((payload as any).userId);
+      const payload = await verifyRefreshToken(refreshToken);
+      let userId: string | undefined;
+      if (typeof payload === 'object' && payload !== null && 'userId' in payload) {
+        userId = (payload as any).userId;
+      }
+      if (!userId) {
+        throw new AppError(401, 'Invalid refresh token', 'INVALID_REFRESH_TOKEN');
+      }
+      const user = await User.findByPk(userId);
       if (!user) {
         throw new AppError(401, 'User not found', 'USER_NOT_FOUND');
       }
