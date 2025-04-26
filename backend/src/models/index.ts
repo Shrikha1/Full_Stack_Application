@@ -1,4 +1,5 @@
 import sequelize from '../config/database';
+import { DataTypes } from 'sequelize';
 import User from './user.model';
 import dotenv from 'dotenv';
 
@@ -8,12 +9,12 @@ dotenv.config();
 User.init(
   {
     id: {
-      type: 'UUID',
-      defaultValue: 'UUIDV4',
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
       primaryKey: true,
     },
     email: {
-      type: 'STRING',
+      type: DataTypes.STRING,
       allowNull: false,
       unique: true,
       validate: {
@@ -21,20 +22,20 @@ User.init(
       },
     },
     password: {
-      type: 'STRING',
+      type: DataTypes.STRING,
       allowNull: false,
     },
     verified: {
-      type: 'BOOLEAN',
+      type: DataTypes.BOOLEAN,
       allowNull: false,
       defaultValue: false,
     },
     verificationToken: {
-      type: 'STRING',
+      type: DataTypes.STRING,
       allowNull: true,
     },
     verificationTokenExpires: {
-      type: 'DATE',
+      type: DataTypes.DATE,
       allowNull: true,
     },
   },
@@ -48,4 +49,4 @@ User.init(
 
 // Export models
 export { User };
-export default sequelize; 
+export default sequelize;
