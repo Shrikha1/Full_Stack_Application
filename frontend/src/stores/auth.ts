@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import axios from 'axios';
+import api from '../services/axios';
 import router from '../router';
 
 interface LoginCredentials {
@@ -32,7 +32,7 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true;
       this.error = null;
       try {
-        const res = await axios.post(
+        const res = await api.post(
           '/api/auth/login',
           credentials,
           { withCredentials: true }
@@ -56,7 +56,7 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true;
       this.error = null;
       try {
-        const res = await axios.post(
+        const res = await api.post(
           '/api/auth/register',
           {
             email: credentials.email,
@@ -80,7 +80,7 @@ export const useAuthStore = defineStore('auth', {
     },
     async logout() {
       try {
-        await axios.post('/api/auth/logout', {}, { withCredentials: true });
+        await api.post('/api/auth/logout', {}, { withCredentials: true });
       } catch {}
       this.user = null;
       this.accessToken = null;
@@ -89,7 +89,7 @@ export const useAuthStore = defineStore('auth', {
     },
     async checkSession() {
       try {
-        const res = await axios.get('/api/auth/session', { withCredentials: true });
+        const res = await api.get('/api/auth/session', { withCredentials: true });
         this.user = res.data.user;
         this.isAuthenticated = true;
       } catch {
@@ -99,7 +99,7 @@ export const useAuthStore = defineStore('auth', {
     },
     async refreshToken() {
       try {
-        const res = await axios.post('/api/auth/refresh-token', {}, { withCredentials: true });
+        const res = await api.post('/api/auth/refresh-token', {}, { withCredentials: true });
         this.accessToken = res.data.accessToken;
       } catch (err: any) {
         this.accessToken = null;

@@ -1,4 +1,4 @@
-import axios from 'axios';
+import api from './axios';
 
 export interface SalesforceAccount {
   Id: string;
@@ -22,13 +22,9 @@ export interface PaginatedResponse {
 }
 
 class SalesforceService {
-  private axiosInstance = axios.create({
-    baseURL: '/api/salesforce'
-  });
-
   async getAccounts(page: number = 1, pageSize: number = 10): Promise<PaginatedResponse> {
     try {
-      const response = await this.axiosInstance.get('/accounts', {
+      const response = await api.get('/api/salesforce/accounts', {
         params: { page, pageSize }
       });
       return response.data;
@@ -40,7 +36,7 @@ class SalesforceService {
 
   async getAccountById(id: string): Promise<SalesforceAccount> {
     try {
-      const response = await this.axiosInstance.get(`/accounts/${id}`);
+      const response = await api.get(`/api/salesforce/accounts/${id}`);
       return response.data;
     } catch (error) {
       console.error('Error fetching account:', error);

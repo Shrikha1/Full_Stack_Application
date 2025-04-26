@@ -64,7 +64,7 @@ async function fetchAccounts() {
   loading.value = true;
   error.value = null;
   try {
-    const res = await api.get('/salesforce/accounts');
+    const res = await api.get('/api/salesforce/accounts');
     accounts.value = res.data.accounts || [];
   } catch (err: any) {
     error.value = err.response?.data?.message || 'Failed to fetch accounts.';

@@ -3,7 +3,7 @@ import router from '../router';
 import { useAuthStore } from '../stores/auth';
 
 const api = axios.create({
-  baseURL: '/api',
+  baseURL: import.meta.env.VITE_API_BASE_URL, // Use env variable for backend URL
   withCredentials: true,
 });
 
