@@ -6,15 +6,17 @@ const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   withCredentials: true,
   headers: {
-    'Content-Type': 'application/json',
-    'Accept': 'application/json'
+    'Content-Type': 'application/json'
   }
 });
 
 // Request interceptor
 api.interceptors.request.use(
   config => {
-    // You can add auth token here if needed
+    // Ensure we're not adding any custom headers that might trigger preflight
+    if (config.method === 'post' || config.method === 'put') {
+      config.headers['Content-Type'] = 'application/json';
+    }
     return config;
   },
   error => {
