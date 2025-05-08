@@ -3,9 +3,24 @@ import router from '../router';
 import { useAuthStore } from '../stores/auth';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL, // Use env variable for backend URL
+  baseURL: import.meta.env.VITE_API_BASE_URL,
   withCredentials: true,
+  headers: {
+    'Content-Type': 'application/json',
+    'Accept': 'application/json'
+  }
 });
+
+// Request interceptor
+api.interceptors.request.use(
+  config => {
+    // You can add auth token here if needed
+    return config;
+  },
+  error => {
+    return Promise.reject(error);
+  }
+);
 
 // Response interceptor: handle 401 errors globally
 api.interceptors.response.use(
