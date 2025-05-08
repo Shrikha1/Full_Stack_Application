@@ -11,9 +11,13 @@ export default defineConfig({
     },
   },
   server: {
-    port: 3000,
+    port: 3001,
     proxy: {
-      '/api': 'http://localhost:3000',
+      '/api': {
+        target: 'https://full-stack-application-zvvd.onrender.com',
+        changeOrigin: true,
+        secure: false,
+      },
     },
   },
 })
