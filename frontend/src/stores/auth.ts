@@ -56,7 +56,7 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true;
       this.error = null;
       try {
-        const res = await api.post(
+        await api.post(
           '/api/auth/register',
           {
             email: credentials.email,
