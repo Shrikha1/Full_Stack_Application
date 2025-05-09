@@ -1,9 +1,9 @@
-import { Request, Response, NextFunction } from 'express';
+import { RequestHandler } from 'express';
 import { AppError } from '../utils/error';
 import { logger } from '../utils/logger';
 
 // Simple admin middleware using an environment variable token for basic protection
-export const validateAdminToken = (req: Request, next: NextFunction) => {
+export const validateAdminToken: RequestHandler = (req, _res, next) => {
   try {
     // Get the admin token from the request
     const adminToken = req.headers['x-admin-token'] as string;
