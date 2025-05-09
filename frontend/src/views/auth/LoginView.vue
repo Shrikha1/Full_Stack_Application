@@ -19,14 +19,24 @@
       </div>
       
       <!-- Error display with special handling for verification errors -->
-      <div v-else-if="auth.error" :class="{'error': true, 'verification-error': auth.error.includes('verify your email')}">
+      <div v-else-if="auth.error" :class="{'error': true, 'verification-error': isVerificationError}">
         <div class="error-message">{{ auth.error }}</div>
         
-        <div v-if="auth.error.includes('verify your email')" class="verification-help">
+        <div v-if="isVerificationError" class="verification-help">
           <p>Didn't receive the verification email?</p>
           <button @click="resendVerification" class="resend-button" :disabled="resending">
             {{ resending ? 'Sending...' : 'Resend Verification Email' }}
           </button>
+          
+          <!-- Help text for users who need assistance -->
+          <div class="verification-tips">
+            <p><strong>Tips:</strong></p>
+            <ul>
+              <li>Check your spam/junk folder</li>
+              <li>Make sure you entered the correct email address</li>
+              <li>Try using a different email provider if problems persist</li>
+            </ul>
+          </div>
         </div>
       </div>
       <div class="form-group">
@@ -37,13 +47,23 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useAuthStore } from '../../stores/auth';
 
 const email = ref('');
 const password = ref('');
 const auth = useAuthStore();
 const resending = ref(false);
+
+// Computed property to detect verification errors
+const isVerificationError = computed(() => {
+  if (!auth.error) return false;
+  return (
+    auth.error.includes('verify your email') || 
+    auth.error.includes('verification') || 
+    auth.error.includes('ACCOUNT_NOT_VERIFIED')
+  );
+});
 
 onMounted(() => {
   // Check if we have a pending verification email
@@ -148,6 +168,23 @@ button:disabled {
 .verification-help p {
   margin-bottom: 0.5rem;
   color: #666;
+}
+
+.verification-tips {
+  margin-top: 15px;
+  font-size: 0.9em;
+  color: #555;
+}
+
+.verification-tips ul {
+  margin-top: 5px;
+  padding-left: 20px;
+  text-align: left;
+}
+
+.verification-tips li {
+  margin-bottom: 5px;
+  line-height: 1.4;
 }
 .resend-button {
   background: #f44336;

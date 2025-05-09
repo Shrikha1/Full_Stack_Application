@@ -93,12 +93,26 @@ export const useAuthStore = defineStore('auth', {
       }
     },
     async logout() {
-      try {
-        await api.post('/api/auth/logout', {}, { withCredentials: true });
-      } catch {}
+      // Already logged out, avoid multiple calls
+      if (!this.isAuthenticated && !this.accessToken && !this.user) {
+        router.push('/login');
+        return;
+      }
+
+      // Clean up local state first
       this.user = null;
       this.accessToken = null;
       this.isAuthenticated = false;
+      
+      try {
+        // Now try to notify the server (but continue even if it fails)
+        await api.post('/api/auth/logout', {}, { withCredentials: true });
+      } catch (error) {
+        // Ignore errors during logout
+        console.warn('Logout API call failed, but user was logged out locally');
+      }
+      
+      // Always redirect to login after clearing local state
       router.push('/login');
     },
     async checkSession() {

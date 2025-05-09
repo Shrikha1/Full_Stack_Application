@@ -251,20 +251,38 @@ export const authController = {
     }
   },
 
-  async logout(_req: Request, res: Response) {
+  async logout(req: Request, res: Response) {
+    // Always handle logout requests even if no token exists
     try {
+      const hasRefreshToken = req.cookies && req.cookies[REFRESH_TOKEN_COOKIE];
+      const hasAccessToken = req.cookies && req.cookies.accessToken;
+      
+      // Log attempt for debugging
+      if (!hasRefreshToken && !hasAccessToken) {
+        // Just log at debug level, as this isn't really an error
+        logger.debug('Logout attempt with no tokens', { 
+          path: req.path, 
+          cookies: Object.keys(req.cookies || {}),
+          ip: req.ip 
+        });
+      }
+      
       const cookieOptions = {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'none' as const
       };
       
+      // Clear cookies regardless of whether they exist
       res.clearCookie(REFRESH_TOKEN_COOKIE, cookieOptions);
       res.clearCookie('accessToken', cookieOptions);
+      
+      // Always return success
       res.status(200).json({ message: 'Logged out successfully' });
     } catch (error) {
+      // Log but don't throw - always succeed logout
       logger.error('Logout error', { message: (error as Error).message });
-      throw new AppError(500, 'Logout failed', true);
+      res.status(200).json({ message: 'Logged out successfully' });
     }
   },
 
