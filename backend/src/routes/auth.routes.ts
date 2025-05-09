@@ -9,6 +9,8 @@ const router = Router();
 // Public routes
 router.post('/register', validate(registerJoiSchema), authController.register);
 router.post('/login', validate(loginJoiSchema), authController.login);
+router.get('/verify-email/:token', authController.verifyEmail);
+router.post('/resend-verification', authController.resendVerification);
 router.post('/refresh-token', authController.refreshToken);
 
 // Protected routes
