@@ -3,6 +3,7 @@ import LoginView from '../views/auth/LoginView.vue';
 import DashboardView from '../views/DashboardView.vue';
 import RegisterView from '../views/auth/RegisterView.vue';
 import VerifyEmailView from '../views/auth/VerifyEmailView.vue';
+import TestVerificationView from '../views/auth/TestVerificationView.vue';
 import { useAuthStore } from '../stores/auth';
 
 const routes = [
@@ -22,6 +23,12 @@ const routes = [
     path: '/verify-email',
     name: 'VerifyEmail',
     component: VerifyEmailView,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/test-verification',
+    name: 'TestVerification',
+    component: TestVerificationView,
     meta: { requiresAuth: false },
   },
   {

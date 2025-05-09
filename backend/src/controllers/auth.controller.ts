@@ -37,6 +37,7 @@ export const authController = {
       const verificationToken = crypto.randomBytes(32).toString('hex');
       const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
 
+      // Create user with verification token
       await User.create({
         email,
         password,
@@ -45,13 +46,38 @@ export const authController = {
         verificationTokenExpires
       });
 
-      // Generate verification link for email
-      // const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:3001'}/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
-      await sendVerificationEmail(email, verificationToken);
-
-      res.status(201).json({
+      // Send verification email
+      const emailResult = await sendVerificationEmail(email, verificationToken);
+      
+      // For development environment, include verification details in response
+      const response: any = {
         message: 'Registration successful. Please check your email to verify your account.'
-      });
+      };
+      
+      // Include verification details in development mode
+      if (process.env.NODE_ENV !== 'production') {
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const verificationLink = `${frontendUrl}/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
+        
+        // Add development testing info
+        response.devInfo = {
+          verificationToken,
+          verificationLink,
+          emailSent: emailResult.success,
+          manualVerifyUrl: `${req.protocol}://${req.get('host')}/api/auth/dev/verify/${email}`,
+          message: 'These details are only included in development mode'
+        };
+        
+        // Log verification details prominently
+        logger.info('=== VERIFICATION DETAILS (DEV ONLY) ===');
+        logger.info(`Email: ${email}`);
+        logger.info(`Token: ${verificationToken}`);
+        logger.info(`Verify Link: ${verificationLink}`);
+        logger.info(`Manual API: ${response.devInfo.manualVerifyUrl}`);
+        logger.info('=====================================');
+      }
+      
+      res.status(201).json(response);
     } catch (error) {
       next(error);
     }
