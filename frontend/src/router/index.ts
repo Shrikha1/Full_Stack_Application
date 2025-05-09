@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router';
 import LoginView from '../views/auth/LoginView.vue';
 import DashboardView from '../views/DashboardView.vue';
 import RegisterView from '../views/auth/RegisterView.vue';
+import VerifyEmailView from '../views/auth/VerifyEmailView.vue';
 import { useAuthStore } from '../stores/auth';
 
 const routes = [
@@ -15,6 +16,12 @@ const routes = [
     path: '/register',
     name: 'Register',
     component: RegisterView,
+    meta: { requiresAuth: false },
+  },
+  {
+    path: '/verify-email',
+    name: 'VerifyEmail',
+    component: VerifyEmailView,
     meta: { requiresAuth: false },
   },
   {
