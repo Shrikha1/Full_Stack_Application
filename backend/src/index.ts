@@ -13,7 +13,9 @@ const app = express();
 // CORS configuration - MUST be before helmet and other middleware
 const allowedOrigins = [
   'https://680c60fe649735669205fdd5--stellar-unicorn-be7810.netlify.app',
-  'https://stellar-unicorn-be7810.netlify.app'
+  'https://stellar-unicorn-be7810.netlify.app',
+  'https://full-stack-application-zvvd.onrender.com',
+  'http://localhost:5173'
 ];
 
 const corsOptions = {
