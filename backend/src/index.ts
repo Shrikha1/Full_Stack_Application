@@ -10,12 +10,23 @@ import salesforceRoutes from './routes/salesforce.routes';
 
 const app = express();
 
-// Security Middleware
-app.use(helmet());
+// CORS configuration - MUST be before helmet and other middleware
+const allowedOrigins = [
+  'https://680c60fe649735669205fdd5--stellar-unicorn-be7810.netlify.app',
+  'https://stellar-unicorn-be7810.netlify.app'
+];
 
-// CORS configuration
 const corsOptions = {
-  origin: 'https://680c60fe649735669205fdd5--stellar-unicorn-be7810.netlify.app',
+  origin: function(origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) === -1) {
+      const msg = 'The CORS policy for this site does not allow access from the specified Origin.';
+      return callback(new Error(msg), false);
+    }
+    return callback(null, true);
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
@@ -24,11 +35,25 @@ const corsOptions = {
   optionsSuccessStatus: 204
 };
 
-// Apply CORS before other middleware
+// Apply CORS first
 app.use(cors(corsOptions));
 
-// Additional headers for preflight
-app.options('*', cors(corsOptions));
+// Then apply other middleware
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+  crossOriginOpenerPolicy: { policy: "unsafe-none" }
+}));
+
+// Debug middleware to log all requests
+app.use((req, res, next) => {
+  logger.info('Incoming request:', {
+    method: req.method,
+    path: req.path,
+    origin: req.headers.origin,
+    headers: req.headers
+  });
+  next();
+});
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -71,6 +96,7 @@ sequelize
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   logger.info(`Server is running on port ${PORT}`);
+  logger.info('CORS configuration:', corsOptions);
 });
 
 export default app;
