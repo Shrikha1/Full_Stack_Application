@@ -60,19 +60,17 @@ export const useAuthStore = defineStore('auth', {
           '/api/auth/register',
           {
             email: credentials.email,
-            password: credentials.password,
+            password: credentials.password
           },
           { withCredentials: true }
         );
-        this.user = res.data.user;
-        this.accessToken = res.data.accessToken;
-        this.isAuthenticated = true;
         return true;
       } catch (err: any) {
-        this.error = err.response?.data?.message || 'Registration failed';
-        this.user = null;
-        this.accessToken = null;
-        this.isAuthenticated = false;
+        if (err.response?.data) {
+          this.error = err.response.data;
+        } else {
+          this.error = 'Registration failed';
+        }
         return false;
       } finally {
         this.loading = false;

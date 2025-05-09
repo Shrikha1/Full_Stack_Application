@@ -38,7 +38,11 @@
             required
             placeholder="Enter your password"
             :disabled="loading"
+            @input="validatePassword"
           />
+          <div v-if="error && error.includes('Password')" class="error-message">
+            {{ error }}
+          </div>
         </div>
         <div class="form-group">
           <label for="confirmPassword">Confirm Password</label>
@@ -98,7 +102,18 @@ const validateEmail = () => {
   } else {
     emailError.value = ''
   }
-  console.log('email:', email.value, 'emailError:', emailError.value, 'loading:', loading.value);
+}
+
+const validatePassword = () => {
+  const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/
+  if (!password.value) {
+    error.value = 'Password is required'
+    return false
+  } else if (!passwordRegex.test(password.value)) {
+    error.value = 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+    return false
+  }
+  return true
 }
 
 const handleRegister = async () => {
@@ -110,21 +125,39 @@ const handleRegister = async () => {
   if (emailError.value) {
     return
   }
+  if (!validatePassword()) {
+    return
+  }
   try {
     loading.value = true
     error.value = ''
     validationErrors.value = []
-    // Pass confirmPassword to match RegisterCredentials type
     const success = await authStore.register({ email: email.value, password: password.value, confirmPassword: confirmPassword.value })
     if (success) {
-      router.push('/login')
+      // Clear form
+      email.value = ''
+      password.value = ''
+      confirmPassword.value = ''
+      // Navigate to login with success message
+      router.push({ 
+        path: '/login',
+        query: { 
+          message: 'Registration successful. Please check your email to verify your account.'
+        }
+      })
     } else {
       // Try to parse backend error
       let backendError: any = authStore.error
       if (typeof backendError === 'string') {
         error.value = backendError
-      } else if (backendError && typeof backendError === 'object' && Array.isArray((backendError as any).data)) {
-        validationErrors.value = (backendError as any).data
+      } else if (backendError && typeof backendError === 'object') {
+        if (Array.isArray(backendError.data)) {
+          validationErrors.value = backendError.data
+        } else if (backendError.message) {
+          error.value = backendError.message
+        } else {
+          error.value = 'Registration failed'
+        }
       } else {
         error.value = 'Registration failed'
       }
