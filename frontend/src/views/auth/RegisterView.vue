@@ -110,18 +110,13 @@ const validatePassword = () => {
     error.value = 'Password is required'
     return false
   } else if (!passwordRegex.test(password.value)) {
-    error.value = 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'
+    error.value = 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character'
     return false
   }
   return true
 }
 
 const handleRegister = async () => {
-  if (password.value !== confirmPassword.value) {
-    error.value = 'Passwords do not match!'
-    validationErrors.value = []
-    return
-  }
   if (emailError.value) {
     return
   }
@@ -132,7 +127,11 @@ const handleRegister = async () => {
     loading.value = true
     error.value = ''
     validationErrors.value = []
-    const success = await authStore.register({ email: email.value, password: password.value, confirmPassword: confirmPassword.value })
+    const success = await authStore.register({ 
+      email: email.value, 
+      password: password.value, 
+      confirmPassword: confirmPassword.value 
+    })
     if (success) {
       // Clear form
       email.value = ''
