@@ -3,7 +3,7 @@ import { AppError } from '../utils/error';
 import { logger } from '../utils/logger';
 
 // Simple admin middleware using an environment variable token for basic protection
-export const validateAdminToken = (req: Request, res: Response, next: NextFunction) => {
+export const validateAdminToken = (req: Request, next: NextFunction) => {
   try {
     // Get the admin token from the request
     const adminToken = req.headers['x-admin-token'] as string;
