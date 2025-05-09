@@ -1,10 +1,12 @@
 import { Router } from 'express';
 import { authController } from '../controllers/auth.controller';
 import { authenticateToken } from '../middleware/auth';
+import { validateAdminToken } from '../middleware/admin.middleware';
 import { validate } from '../middleware/validate.middleware';
 import { registerJoiSchema, loginJoiSchema } from '../validations/auth.joi';
 import { User } from '../models';
 import { logger } from '../utils/logger';
+import { verifyUserByEmail } from '../utils/email';
 
 const router = Router();
 
@@ -18,7 +20,34 @@ router.post('/refresh-token', authController.refreshToken);
 // Protected routes
 router.post('/logout', authenticateToken, authController.logout);
 
-// Development routes - only enabled in non-production environments
+// Admin routes - protected with admin token in all environments
+// These routes can be used in production with proper authentication
+router.get('/admin/verify/:email', validateAdminToken, async (req, res) => {
+  try {
+    const { email } = req.params;
+    const result = await verifyUserByEmail(email);
+    
+    logger.info(`ADMIN: User ${email} verification attempt`, { success: result.success });
+    res.json(result);
+  } catch (error) {
+    logger.error('Error in admin verification route', { error });
+    res.status(500).json({ success: false, message: 'Server error in admin verification' });
+  }
+});
+
+router.get('/admin/users', validateAdminToken, async (_req, res) => {
+  try {
+    const users = await User.findAll({ 
+      attributes: ['id', 'email', 'verified', 'createdAt']
+    });
+    res.json({ users });
+  } catch (error) {
+    logger.error('Error fetching users via admin route', { error });
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// Development only routes - Unprotected for easier testing
 if (process.env.NODE_ENV !== 'production') {
   router.get('/dev/verify/:email', async (req, res): Promise<void> => {
     try {

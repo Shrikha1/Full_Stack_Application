@@ -92,10 +92,29 @@ export const authController = {
         throw new AppError(401, 'Invalid email or password', true);
       }
 
-      // Check if email verification is required
-      // TEMPORARY: Allow bypassing verification in production with environment variable
-      const skipVerification = process.env.SKIP_EMAIL_VERIFICATION === 'true';
-      const showVerifyOptions = process.env.NODE_ENV !== 'production' || process.env.SHOW_VERIFY_OPTIONS === 'true';
+      // TEMPORARY BYPASS FOR PRODUCTION: Allow users to log in without verification
+      // until the dashboard and email verification systems are fully functional
+      
+      // Check if we should enforce email verification
+      const enforcedDate = new Date('2025-06-15T00:00:00Z'); // Future date when verification will be required
+      const currentDate = new Date();
+      
+      // Skip verification if:
+      // 1. SKIP_EMAIL_VERIFICATION environment variable is set to 'true' OR
+      // 2. We're before the enforcement date (temporary override for production)
+      const skipVerification = 
+        process.env.SKIP_EMAIL_VERIFICATION === 'true' || 
+        currentDate < enforcedDate;
+      
+      // Control whether to show verification options in errors
+      const showVerifyOptions = 
+        process.env.NODE_ENV !== 'production' || 
+        process.env.SHOW_VERIFY_OPTIONS === 'true';
+      
+      // Log the verification bypass
+      if (!user.verified && skipVerification) {
+        logger.info(`Verification bypassed for user ${user.email} - bypass active until ${enforcedDate.toISOString()}`);
+      }
       
       if (!user.verified && !skipVerification) {
         // If not verified and verification is not skipped, reject login
