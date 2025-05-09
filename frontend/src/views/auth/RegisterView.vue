@@ -13,7 +13,6 @@
             placeholder="Enter your email"
             :disabled="loading"
             @input="validateEmail"
-            @blur="validateEmail"
           />
           <div v-if="emailError" class="error-message">
             {{ emailError }}
@@ -29,7 +28,6 @@
             placeholder="Enter your password"
             :disabled="loading"
             @input="validatePassword"
-            @blur="validatePassword"
           />
           <div v-if="error && error.includes('Password')" class="error-message">
             {{ error }}
@@ -44,12 +42,7 @@
             required
             placeholder="Confirm your password"
             :disabled="loading"
-            @input="validateConfirmPassword"
-            @blur="validateConfirmPassword"
           />
-          <div v-if="confirmPasswordError" class="error-message">
-            {{ confirmPasswordError }}
-          </div>
         </div>
         <!-- Show backend validation errors -->
         <div v-if="Array.isArray(validationErrors) && validationErrors.length" class="error-message">
@@ -61,12 +54,7 @@
         <div v-else-if="error" class="error-message">
           {{ error }}
         </div>
-        <button 
-          type="submit" 
-          class="register-button" 
-          :disabled="loading || !isFormValid"
-          :title="!isFormValid ? 'Please fill in all fields correctly' : ''"
-        >
+        <button type="submit" class="register-button" :disabled="loading">
           {{ loading ? 'Registering...' : 'Register' }}
         </button>
       </form>
@@ -78,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
@@ -91,21 +79,7 @@ const confirmPassword = ref('')
 const loading = ref(false)
 const error = ref<string | null>(null)
 const emailError = ref('')
-const confirmPasswordError = ref('')
 const validationErrors = ref<string[]>([])
-
-const isFormValid = computed(() => {
-  console.log('Validation state:', {
-    emailError: emailError.value,
-    passwordError: error.value,
-    confirmPasswordError: confirmPasswordError.value,
-    hasEmail: !!email.value,
-    hasPassword: !!password.value,
-    hasConfirmPassword: !!confirmPassword.value
-  });
-  return !emailError.value && !error.value && !confirmPasswordError.value &&
-         email.value && password.value && confirmPassword.value
-})
 
 const validateEmail = () => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -116,7 +90,6 @@ const validateEmail = () => {
   } else {
     emailError.value = ''
   }
-  console.log('Email validation:', { email: email.value, error: emailError.value });
 }
 
 const validatePassword = () => {
@@ -129,29 +102,14 @@ const validatePassword = () => {
     return false
   }
   error.value = ''
-  validateConfirmPassword()
-  console.log('Password validation:', { password: password.value, error: error.value });
-  return true
-}
-
-const validateConfirmPassword = () => {
-  if (!confirmPassword.value) {
-    confirmPasswordError.value = 'Please confirm your password'
-    return false
-  } else if (confirmPassword.value !== password.value) {
-    confirmPasswordError.value = 'Passwords do not match'
-    return false
-  }
-  confirmPasswordError.value = ''
-  console.log('Confirm password validation:', { 
-    confirmPassword: confirmPassword.value, 
-    error: confirmPasswordError.value 
-  });
   return true
 }
 
 const handleRegister = async () => {
-  if (!isFormValid.value) {
+  if (emailError.value) {
+    return
+  }
+  if (!validatePassword()) {
     return
   }
   try {
