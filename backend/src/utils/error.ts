@@ -2,10 +2,10 @@ export class AppError extends Error {
   constructor(
     public statusCode: number,
     message: string,
-    public isOperational = true
+    public code: string
   ) {
     super(message);
-    Object.setPrototypeOf(this, AppError.prototype);
+    this.name = 'AppError';
     Error.captureStackTrace(this, this.constructor);
   }
 } 

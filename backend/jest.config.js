@@ -1,15 +1,11 @@
 module.exports = {
   preset: 'ts-jest',
   testEnvironment: 'node',
-  setupFiles: ['<rootDir>/jest.setup.js'],
-  moduleFileExtensions: ['ts', 'js'],
+  setupFilesAfterEnv: ['<rootDir>/src/tests/setup.ts'],
+  testTimeout: 10000,
   transform: {
-    '^.+\\.ts$': 'ts-jest'
-  },
-  testMatch: ['**/src/tests/**/*.test.ts'],
-  globals: {
-    'ts-jest': {
+    '^.+\\.tsx?$': ['ts-jest', {
       tsconfig: 'tsconfig.json'
-    }
+    }]
   }
 };

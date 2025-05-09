@@ -1,11 +1,9 @@
-import sequelize from '../config/database';
+import { sequelize } from '../config/database';
+import { User, UserAttributes } from './user.model';
 import { DataTypes } from 'sequelize';
-import User from './user.model';
-import dotenv from 'dotenv';
+import bcrypt from 'bcrypt';
 
-dotenv.config();
-
-// Initialize models
+// Initialize User model
 User.init(
   {
     id: {
@@ -24,6 +22,18 @@ User.init(
     password: {
       type: DataTypes.STRING,
       allowNull: false,
+    },
+    salesforceAccessToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    salesforceRefreshToken: {
+      type: DataTypes.STRING,
+      allowNull: true,
+    },
+    salesforceInstanceUrl: {
+      type: DataTypes.STRING,
+      allowNull: true,
     },
     verified: {
       type: DataTypes.BOOLEAN,
@@ -44,9 +54,16 @@ User.init(
     modelName: 'User',
     tableName: 'users',
     timestamps: true,
+    hooks: {
+      beforeSave: async (user: User) => {
+        if (user.changed('password')) {
+          const salt = await bcrypt.genSalt(10);
+          user.password = await bcrypt.hash(user.password, salt);
+        }
+      },
+    },
   }
 );
 
-// Export models
-export { User };
-export default sequelize;
+// Export models and sequelize instance
+export { User, UserAttributes, sequelize };
