@@ -1,34 +1,131 @@
 import nodemailer from 'nodemailer';
 import { logger } from './logger';
-
-// Create the appropriate transporter based on environment
-let transporter: nodemailer.Transporter;
+import { User } from '../models';
 
 // For development environment: temporarily disable verification requirement
 const isDev = process.env.NODE_ENV !== 'production';
 
-// In production, use SendGrid or a similar service
-// In development, use ethereal.email for testing or just log to console
-if (process.env.NODE_ENV === 'production') {
-  // For production: Use SendGrid or similar service
-  transporter = nodemailer.createTransport({
-    service: 'gmail',  // Or SendGrid, etc.
-    auth: {
-      user: process.env.EMAIL_USER || 'your-email@gmail.com',
-      pass: process.env.EMAIL_PASS || 'your-app-password'
+// Create initial transporter
+let transporter: nodemailer.Transporter = createDefaultTransport();
+
+// Initialize an ethereal email account for development if needed
+(async function initializeEmailTransport() {
+  // For production: use best available email service
+  if (process.env.NODE_ENV === 'production') {
+    if (process.env.EMAIL_SERVICE === 'sendgrid' && process.env.SENDGRID_API_KEY) {
+      // SendGrid configuration
+      transporter = nodemailer.createTransport({
+        service: 'SendGrid',
+        auth: {
+          user: 'apikey',
+          pass: process.env.SENDGRID_API_KEY
+        }
+      });
+      logger.info('Email service initialized with SendGrid');
+    } else if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
+      // Gmail or other SMTP configuration
+      transporter = nodemailer.createTransport({
+        service: process.env.EMAIL_SERVICE || 'gmail', 
+        auth: {
+          user: process.env.EMAIL_USER,
+          pass: process.env.EMAIL_PASS
+        }
+      });
+      logger.info(`Email service initialized with ${process.env.EMAIL_SERVICE || 'gmail'}`);
+    } else {
+      // Use a real ethereal account for test emails
+      try {
+        logger.warn('No email configuration found for production. Creating Ethereal test account.');
+        const testAccount = await nodemailer.createTestAccount();
+        
+        transporter = nodemailer.createTransport({
+          host: 'smtp.ethereal.email',
+          port: 587,
+          secure: false,
+          auth: {
+            user: testAccount.user,
+            pass: testAccount.pass
+          }
+        });
+        
+        logger.info('Created Ethereal test account for production use', {
+          user: testAccount.user
+        });
+      } catch (error) {
+        logger.error('Failed to create test account, using default transport', { error });
+      }
     }
-  });
-} else {
-  // For development: Create a test account or log to console
-  transporter = nodemailer.createTransport({
-    host: 'smtp.ethereal.email',
-    port: 587,
-    secure: false,
-    auth: {
-      user: 'valerie.kunde14@ethereal.email', // Test account
-      pass: 'TsvbG3gxxfS9Uf3vWw'               // Test password
+  } else {
+    // Development mode - create an ethereal account
+    try {
+      const testAccount = await nodemailer.createTestAccount();
+      
+      transporter = nodemailer.createTransport({
+        host: 'smtp.ethereal.email',
+        port: 587,
+        secure: false,
+        auth: {
+          user: testAccount.user,
+          pass: testAccount.pass
+        }
+      });
+      
+      logger.info('Created Ethereal test account for development', {
+        user: testAccount.user,
+        pass: testAccount.pass
+      });
+    } catch (error) {
+      logger.error('Failed to create test account, using default transport', { error });
     }
-  });
+  }
+})().catch(err => logger.error('Error initializing email transport', { error: err }));
+
+// Create a default email transport as a fallback
+function createDefaultTransport(): nodemailer.Transporter {
+  // Create a console-based transport that just logs emails
+  return nodemailer.createTransport({
+    name: 'minimal',
+    version: '0.1.0',
+    send: (mail: any, callback: (err: Error | null, info: any) => void) => {
+      const info = {
+        envelope: mail.message.getEnvelope(),
+        messageId: `<${Math.random().toString(36).slice(2, 12)}@localhost>`,
+        message: mail.message.toString()
+      };
+      logger.info('Email would be sent', {
+        to: info.envelope.to,
+        from: info.envelope.from,
+        subject: mail.message.subject,
+        preview: 'https://ethereal.email/message/preview (account not created yet)'
+      });
+      callback(null, info);
+    }
+  } as any);
+}
+
+// Export function to verify a user directly (for admin/testing purposes)
+export async function verifyUserByEmail(email: string): Promise<{ success: boolean; message: string }> {
+  try {
+    const user = await User.findOne({ where: { email } });
+    
+    if (!user) {
+      return { success: false, message: 'User not found' };
+    }
+    
+    if (user.verified) {
+      return { success: true, message: 'User already verified' };
+    }
+    
+    // Mark user as verified
+    user.verified = true;
+    await user.save();
+    
+    logger.info(`User ${email} manually verified`);
+    return { success: true, message: 'User verified successfully' };
+  } catch (error) {
+    logger.error('Error verifying user:', error);
+    return { success: false, message: 'Error verifying user' };
+  }
 }
 
 export async function sendVerificationEmail(to: string, verificationToken: string) {

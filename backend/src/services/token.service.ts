@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import { AppError } from '../utils/errorHandler';
+import { AppError } from '../utils/error';
 
 interface TokenPayload {
   userId: number;
@@ -30,7 +30,7 @@ export class TokenService {
     try {
       return jwt.verify(token, process.env.JWT_SECRET || '') as TokenPayload;
     } catch (error) {
-      throw new AppError(401, 'Invalid access token', 'INVALID_ACCESS_TOKEN');
+      throw new AppError(401, 'Invalid access token', true, { code: 'INVALID_ACCESS_TOKEN' });
     }
   }
 
@@ -38,7 +38,7 @@ export class TokenService {
     try {
       return jwt.verify(token, process.env.JWT_REFRESH_SECRET || '') as TokenPayload;
     } catch (error) {
-      throw new AppError(401, 'Invalid refresh token', 'INVALID_REFRESH_TOKEN');
+      throw new AppError(401, 'Invalid refresh token', true, { code: 'INVALID_REFRESH_TOKEN' });
     }
   }
 } 

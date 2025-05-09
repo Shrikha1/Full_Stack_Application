@@ -1,5 +1,5 @@
 import { SalesforceConnectionPool } from '../utils/SalesforceConnectionPool';
-import { AppError } from '../utils/errorHandler';
+import { AppError } from '../utils/error';
 import logger from '../utils/logger';
 
 /**
@@ -144,7 +144,7 @@ export class SalesforceService {
       };
     } catch (error) {
       logger.error('Error fetching Salesforce accounts', { message: (error as Error).message });
-      throw new AppError(500, 'Error fetching Salesforce accounts', 'SF_QUERY_ERROR');
+      throw new AppError(500, 'Error fetching Salesforce accounts', true, { code: 'SF_QUERY_ERROR' });
     }
   }
 
@@ -156,7 +156,7 @@ export class SalesforceService {
     try {
       // Basic Salesforce ID format validation
       if (!/^[a-zA-Z0-9]{15,18}$/.test(id)) {
-        throw new AppError(400, 'Invalid Account ID format', 'INVALID_ACCOUNT_ID');
+        throw new AppError(400, 'Invalid Account ID format', true, { code: 'INVALID_ACCOUNT_ID' });
       }
       const connection = await this.connectionPool.getConnection();
       // Use parameterized query if supported, otherwise safely interpolate
@@ -167,7 +167,7 @@ export class SalesforceService {
          WHERE Id = '${id.replace(/'/g, '')}'`
       );
       if (!result.records || result.records.length === 0) {
-        throw new AppError(404, 'Account not found', 'ACCOUNT_NOT_FOUND');
+        throw new AppError(404, 'Account not found', true, { code: 'ACCOUNT_NOT_FOUND' });
       }
       return result.records[0];
     } catch (error) {
@@ -175,7 +175,7 @@ export class SalesforceService {
         throw error;
       }
       logger.error('Error fetching Salesforce account', { message: (error as Error).message });
-      throw new AppError(500, 'Error fetching Salesforce account', 'SF_QUERY_ERROR');
+      throw new AppError(500, 'Error fetching Salesforce account', true, { code: 'SF_QUERY_ERROR' });
     }
   }
 }

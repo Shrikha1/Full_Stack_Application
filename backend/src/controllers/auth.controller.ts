@@ -92,8 +92,35 @@ export const authController = {
         throw new AppError(401, 'Invalid email or password', true);
       }
 
-      if (!user.verified) {
-        throw new AppError(401, 'Please verify your email before logging in. Check your inbox for the verification link.', true);
+      // Check if email verification is required
+      // TEMPORARY: Allow bypassing verification in production with environment variable
+      const skipVerification = process.env.SKIP_EMAIL_VERIFICATION === 'true';
+      const showVerifyOptions = process.env.NODE_ENV !== 'production' || process.env.SHOW_VERIFY_OPTIONS === 'true';
+      
+      if (!user.verified && !skipVerification) {
+        // If not verified and verification is not skipped, reject login
+        const message = 'Please verify your email before logging in. Check your inbox for the verification link.';
+        
+        if (showVerifyOptions) {
+          // For development or if explicitly enabled, provide verification options in error
+          logger.info(`LOGIN ATTEMPT: Unverified user ${user.email} - providing verification options`);
+          throw new AppError(401, message, true, {
+            code: 'ACCOUNT_NOT_VERIFIED',
+            verifyOptions: {
+              email: user.email,
+              manualVerifyUrl: `${req.protocol}://${req.get('host')}/api/auth/dev/verify/${user.email}`,
+              resendUrl: `${req.protocol}://${req.get('host')}/api/auth/resend-verification`
+            }
+          });
+        } else {
+          // Standard error in production
+          throw new AppError(401, message, true, { code: 'ACCOUNT_NOT_VERIFIED' });
+        }
+      }
+      
+      // If user is not verified but verification is skipped, log this event
+      if (!user.verified && skipVerification) {
+        logger.warn(`VERIFICATION BYPASSED: User ${user.email} logged in without verification due to SKIP_EMAIL_VERIFICATION flag`);
       }
 
       const valid = await bcrypt.compare(password, user.password);
