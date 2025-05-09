@@ -43,7 +43,13 @@ export const useAuthStore = defineStore('auth', {
         router.push('/dashboard');
         return true;
       } catch (err: any) {
-        this.error = err.response?.data?.message || 'Login failed';
+        if (err.response?.data?.code === 'ACCOUNT_NOT_VERIFIED') {
+          this.error = err.response.data.message;
+          // Store email for potential resend
+          localStorage.setItem('pendingVerificationEmail', credentials.email);
+        } else {
+          this.error = err.response?.data?.message || 'Login failed';
+        }
         this.user = null;
         this.accessToken = null;
         this.isAuthenticated = false;
@@ -129,6 +135,20 @@ export const useAuthStore = defineStore('auth', {
       } else {
         localStorage.removeItem('accessToken');
         this.isAuthenticated = false;
+      }
+    },
+    async resendVerification(email: string) {
+      this.loading = true;
+      this.error = null;
+      try {
+        await api.post('/api/auth/resend-verification', { email });
+        this.error = 'Verification email sent! Please check your inbox.';
+        return true;
+      } catch (err: any) {
+        this.error = err.response?.data?.message || 'Failed to resend verification email';
+        return false;
+      } finally {
+        this.loading = false;
       }
     },
   },
