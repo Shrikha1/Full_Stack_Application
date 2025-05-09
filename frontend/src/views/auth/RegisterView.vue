@@ -13,6 +13,7 @@
             placeholder="Enter your email"
             :disabled="loading"
             @input="validateEmail"
+            @blur="validateEmail"
           />
           <div v-if="emailError" class="error-message">
             {{ emailError }}
@@ -28,6 +29,7 @@
             placeholder="Enter your password"
             :disabled="loading"
             @input="validatePassword"
+            @blur="validatePassword"
           />
           <div v-if="error && error.includes('Password')" class="error-message">
             {{ error }}
@@ -43,6 +45,7 @@
             placeholder="Confirm your password"
             :disabled="loading"
             @input="validateConfirmPassword"
+            @blur="validateConfirmPassword"
           />
           <div v-if="confirmPasswordError" class="error-message">
             {{ confirmPasswordError }}
@@ -58,7 +61,12 @@
         <div v-else-if="error" class="error-message">
           {{ error }}
         </div>
-        <button type="submit" class="register-button" :disabled="loading || !isFormValid">
+        <button 
+          type="submit" 
+          class="register-button" 
+          :disabled="loading || !isFormValid"
+          :title="!isFormValid ? 'Please fill in all fields correctly' : ''"
+        >
           {{ loading ? 'Registering...' : 'Register' }}
         </button>
       </form>
@@ -87,6 +95,14 @@ const confirmPasswordError = ref('')
 const validationErrors = ref<string[]>([])
 
 const isFormValid = computed(() => {
+  console.log('Validation state:', {
+    emailError: emailError.value,
+    passwordError: error.value,
+    confirmPasswordError: confirmPasswordError.value,
+    hasEmail: !!email.value,
+    hasPassword: !!password.value,
+    hasConfirmPassword: !!confirmPassword.value
+  });
   return !emailError.value && !error.value && !confirmPasswordError.value &&
          email.value && password.value && confirmPassword.value
 })
@@ -100,6 +116,7 @@ const validateEmail = () => {
   } else {
     emailError.value = ''
   }
+  console.log('Email validation:', { email: email.value, error: emailError.value });
 }
 
 const validatePassword = () => {
@@ -113,6 +130,7 @@ const validatePassword = () => {
   }
   error.value = ''
   validateConfirmPassword()
+  console.log('Password validation:', { password: password.value, error: error.value });
   return true
 }
 
@@ -125,6 +143,10 @@ const validateConfirmPassword = () => {
     return false
   }
   confirmPasswordError.value = ''
+  console.log('Confirm password validation:', { 
+    confirmPassword: confirmPassword.value, 
+    error: confirmPasswordError.value 
+  });
   return true
 }
 
