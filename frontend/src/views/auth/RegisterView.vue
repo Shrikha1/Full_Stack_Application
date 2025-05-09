@@ -4,17 +4,6 @@
       <h2>Register</h2>
       <form @submit.prevent="handleRegister">
         <div class="form-group">
-          <label for="name">Full Name</label>
-          <input
-            type="text"
-            id="name"
-            v-model="name"
-            required
-            placeholder="Enter your full name"
-            :disabled="loading"
-          />
-        </div>
-        <div class="form-group">
           <label for="email">Email</label>
           <input
             type="email"
@@ -53,7 +42,11 @@
             required
             placeholder="Confirm your password"
             :disabled="loading"
+            @input="validateConfirmPassword"
           />
+          <div v-if="confirmPasswordError" class="error-message">
+            {{ confirmPasswordError }}
+          </div>
         </div>
         <!-- Show backend validation errors -->
         <div v-if="Array.isArray(validationErrors) && validationErrors.length" class="error-message">
@@ -65,7 +58,7 @@
         <div v-else-if="error" class="error-message">
           {{ error }}
         </div>
-        <button type="submit" class="register-button" :disabled="loading">
+        <button type="submit" class="register-button" :disabled="loading || !isFormValid">
           {{ loading ? 'Registering...' : 'Register' }}
         </button>
       </form>
@@ -77,21 +70,26 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const authStore = useAuthStore()
 
-const name = ref('')
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 const loading = ref(false)
 const error = ref<string | null>(null)
 const emailError = ref('')
+const confirmPasswordError = ref('')
 const validationErrors = ref<string[]>([])
+
+const isFormValid = computed(() => {
+  return !emailError.value && !error.value && !confirmPasswordError.value &&
+         email.value && password.value && confirmPassword.value
+})
 
 const validateEmail = () => {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -113,14 +111,25 @@ const validatePassword = () => {
     error.value = 'Password must be at least 8 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character'
     return false
   }
+  error.value = ''
+  validateConfirmPassword()
+  return true
+}
+
+const validateConfirmPassword = () => {
+  if (!confirmPassword.value) {
+    confirmPasswordError.value = 'Please confirm your password'
+    return false
+  } else if (confirmPassword.value !== password.value) {
+    confirmPasswordError.value = 'Passwords do not match'
+    return false
+  }
+  confirmPasswordError.value = ''
   return true
 }
 
 const handleRegister = async () => {
-  if (emailError.value) {
-    return
-  }
-  if (!validatePassword()) {
+  if (!isFormValid.value) {
     return
   }
   try {
