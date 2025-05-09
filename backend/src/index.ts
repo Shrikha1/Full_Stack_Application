@@ -45,7 +45,7 @@ app.use(helmet({
 }));
 
 // Debug middleware to log all requests
-app.use((req, res, next) => {
+app.use((req, _res, next) => {
   logger.info('Incoming request:', {
     method: req.method,
     path: req.path,
