@@ -43,12 +43,22 @@ export const useAuthStore = defineStore('auth', {
         router.push('/dashboard');
         return true;
       } catch (err: any) {
-        if (err.response?.data?.code === 'ACCOUNT_NOT_VERIFIED') {
-          this.error = err.response.data.message;
+        // Extract error message - checking for verification error patterns
+        const errorMessage = err.response?.data?.message || '';
+        
+        if (
+          errorMessage.includes('verify your email') || 
+          errorMessage.includes('ACCOUNT_NOT_VERIFIED') ||
+          err.response?.data?.code === 'ACCOUNT_NOT_VERIFIED'
+        ) {
+          // This is a verification error
+          this.error = 'Please verify your email before logging in. Check your inbox for the verification link or request a new one below.';
           // Store email for potential resend
           localStorage.setItem('pendingVerificationEmail', credentials.email);
+        } else if (err.response?.status === 500) {
+          this.error = 'Server error. Please try again later or contact support if the problem persists.';
         } else {
-          this.error = err.response?.data?.message || 'Login failed';
+          this.error = errorMessage || 'Login failed. Please check your credentials and try again.';
         }
         this.user = null;
         this.accessToken = null;
@@ -139,13 +149,22 @@ export const useAuthStore = defineStore('auth', {
     },
     async resendVerification(email: string) {
       this.loading = true;
-      this.error = null;
+      // Don't clear error here to maintain context about verification needs
       try {
-        await api.post('/api/auth/resend-verification', { email });
-        this.error = 'Verification email sent! Please check your inbox.';
+        const response = await api.post('/api/auth/resend-verification', { email });
+        // Show a success message that's distinctive from errors
+        // We'll handle it specially in the UI
+        this.error = 'SUCCESS: Verification email has been sent! Please check your inbox and spam folder.';
         return true;
       } catch (err: any) {
-        this.error = err.response?.data?.message || 'Failed to resend verification email';
+        const errorMessage = err.response?.data?.message || '';
+        if (errorMessage.includes('already verified')) {
+          this.error = 'Your account is already verified. Please try logging in again.';
+        } else if (err.response?.status === 404) {
+          this.error = 'Email not found. Please check your email address or register first.';
+        } else {
+          this.error = 'Failed to send verification email. Please try again or contact support.';
+        }
         return false;
       } finally {
         this.loading = false;

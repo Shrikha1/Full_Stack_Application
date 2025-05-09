@@ -13,8 +13,15 @@
       <div class="form-group">
         <button type="submit" :disabled="auth.loading">{{ auth.loading ? 'Logging in...' : 'Login' }}</button>
       </div>
-      <div v-if="auth.error" class="error">
-        {{ auth.error }}
+      <!-- Success notification for verification email -->  
+      <div v-if="auth.error && auth.error.startsWith('SUCCESS:')" class="success">
+        {{ auth.error.replace('SUCCESS:', '').trim() }}
+      </div>
+      
+      <!-- Error display with special handling for verification errors -->
+      <div v-else-if="auth.error" :class="{'error': true, 'verification-error': auth.error.includes('verify your email')}">
+        <div class="error-message">{{ auth.error }}</div>
+        
         <div v-if="auth.error.includes('verify your email')" class="verification-help">
           <p>Didn't receive the verification email?</p>
           <button @click="resendVerification" class="resend-button" :disabled="resending">
@@ -117,6 +124,21 @@ button:disabled {
   padding: 0.5rem;
   background-color: #ffebee;
   border-radius: 4px;
+}
+
+.verification-error {
+  border-left: 4px solid #ff9800;
+}
+
+.success {
+  color: #2e7d32;
+  margin-top: 0.5rem;
+  font-size: 0.96rem;
+  text-align: center;
+  padding: 0.8rem;
+  background-color: #e8f5e9;
+  border-radius: 4px;
+  border-left: 4px solid #4caf50;
 }
 .verification-help {
   margin-top: 1rem;
