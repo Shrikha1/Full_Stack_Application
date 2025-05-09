@@ -151,7 +151,7 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true;
       // Don't clear error here to maintain context about verification needs
       try {
-        const response = await api.post('/api/auth/resend-verification', { email });
+        await api.post('/api/auth/resend-verification', { email });
         // Show a success message that's distinctive from errors
         // We'll handle it specially in the UI
         this.error = 'SUCCESS: Verification email has been sent! Please check your inbox and spam folder.';
