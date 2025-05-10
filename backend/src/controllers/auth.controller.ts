@@ -201,25 +201,21 @@ export const authController = {
       user.verificationTokenExpires = verificationTokenExpires;
       await user.save();
 
-      try {
-        // Send verification email
-        const emailResult = await sendVerificationEmail(email, verificationToken);
-        if (!emailResult.success) {
-          throw new AppError(500, 'Failed to send verification email', true);
-        }
-
-        res.json({ message: 'Verification email sent successfully' });
-      } catch (emailError) {
+      // Send verification email
+      const emailResult = await sendVerificationEmail(email, verificationToken);
+      if (!emailResult.success) {
         // If email sending fails, revert the token changes
         user.verificationToken = undefined;
         user.verificationTokenExpires = undefined;
         await user.save();
 
         throw new AppError(500, 'Failed to send verification email', true, {
-          error: emailError.message,
+          error: emailResult.message,
           code: 'EMAIL_SEND_FAILED'
         });
       }
+
+      res.json({ message: 'Verification email sent successfully' });
     } catch (error) {
       logger.error('Error in resendVerification:', {
         error: error.message,
@@ -228,6 +224,7 @@ export const authController = {
       });
       next(error);
     }
+  }
 
       await sendVerificationEmail(email, verificationToken);
 

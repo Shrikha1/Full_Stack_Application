@@ -128,7 +128,7 @@ export async function verifyUserByEmail(email: string): Promise<{ success: boole
   }
 }
 
-export async function sendVerificationEmail(to: string, verificationToken: string) {
+export async function sendVerificationEmail(to: string, verificationToken: string): Promise<{ success: boolean; message: string; verificationLink?: string }> {
   // Generate the verification link
   const frontendUrl = process.env.FRONTEND_URL || 
   (process.env.NODE_ENV === 'production' || 
