@@ -11,44 +11,44 @@ let transporter: nodemailer.Transporter = createDefaultTransport();
 // Initialize an ethereal email account for development if needed
 (async function initializeEmailTransport() {
   // For production: use best available email service
-  if (process.env.NODE_ENV === 'production') {
-    if (process.env.EMAIL_SERVICE === 'sendgrid' && process.env.SENDGRID_API_KEY) {
-      // SendGrid configuration
+  if (process.env.NODE_ENV === 'production' || process.env.RENDER === 'true' || process.env.NETLIFY === 'true') {
+    // Always use SendGrid in production environment
+    if (!process.env.SENDGRID_API_KEY) {
+      throw new Error('SENDGRID_API_KEY is required in production');
+    }
+    
+    // SendGrid configuration
+    transporter = nodemailer.createTransport({
+      service: 'SendGrid',
+      auth: {
+        user: 'apikey',
+        pass: process.env.SENDGRID_API_KEY
+      }
+    });
+    logger.info('Email service initialized with SendGrid');
+  } else {
+    // For development, use Ethereal email
+    try {
+      logger.info('Creating Ethereal test account for development');
+      const testAccount = await nodemailer.createTestAccount();
+      
       transporter = nodemailer.createTransport({
-        service: 'SendGrid',
+        host: 'smtp.ethereal.email',
+        port: 587,
+        secure: false,
         auth: {
-          user: 'apikey',
-          pass: process.env.SENDGRID_API_KEY
+          user: testAccount.user,
+          pass: testAccount.pass
         }
       });
-      logger.info('Email service initialized with SendGrid');
-    } else if (process.env.EMAIL_USER && process.env.EMAIL_PASS) {
-      // Gmail or other SMTP configuration
-      transporter = nodemailer.createTransport({
-        service: process.env.EMAIL_SERVICE || 'gmail', 
-        auth: {
-          user: process.env.EMAIL_USER,
-          pass: process.env.EMAIL_PASS
-        }
+      
+      logger.info('Development email transport initialized with Ethereal', {
+        user: testAccount.user
       });
-      logger.info(`Email service initialized with ${process.env.EMAIL_SERVICE || 'gmail'}`);
-    } else {
-      // Use a real ethereal account for test emails
-      try {
-        logger.warn('No email configuration found for production. Creating Ethereal test account.');
-        const testAccount = await nodemailer.createTestAccount();
-        
-        transporter = nodemailer.createTransport({
-          host: 'smtp.ethereal.email',
-          port: 587,
-          secure: false,
-          auth: {
-            user: testAccount.user,
-            pass: testAccount.pass
-          }
-        });
-        
-        logger.info('Created Ethereal test account for production use', {
+    } catch (error) {
+      logger.error('Failed to create test account, using default transport', { error });
+    }
+  }
           user: testAccount.user
         });
       } catch (error) {
@@ -130,48 +130,96 @@ export async function verifyUserByEmail(email: string): Promise<{ success: boole
 
 export async function sendVerificationEmail(to: string, verificationToken: string) {
   // Generate the verification link
-  const frontendUrl = process.env.FRONTEND_URL || 'https://stellar-unicorn-be7810.netlify.app';
+  const frontendUrl = process.env.FRONTEND_URL || 
+  (process.env.NODE_ENV === 'production' || 
+   process.env.RENDER === 'true' || 
+   process.env.NETLIFY === 'true') 
+    ? 'https://stellar-unicorn-be7810.netlify.app' 
+    : 'http://localhost:5173';
   const verificationLink = `${frontendUrl}/verify-email?token=${verificationToken}&email=${encodeURIComponent(to)}`;
-  
+
+  // Log detailed email configuration
+  logger.info('Email configuration:', {
+    to,
+    frontendUrl,
+    verificationLink,
+    emailFrom: process.env.EMAIL_FROM,
+    sendgridApiKey: process.env.SENDGRID_API_KEY ? 'SET' : 'NOT SET',
+    nodeEnv: process.env.NODE_ENV,
+    renderEnv: process.env.RENDER
+  });
+
+  // Check if we have the required email configuration
+  if (!process.env.SENDGRID_API_KEY) {
+    logger.error('SendGrid API key is not set in environment variables');
+    throw new Error('SendGrid API key is required for email sending');
+  }
+
+  if (!process.env.EMAIL_FROM) {
+    logger.error('Email sender address is not set in environment variables');
+    throw new Error('Email sender address is required for email sending');
+  }
+
   try {
     // Send the email
     const info = await transporter.sendMail({
-      from: process.env.EMAIL_FROM || '"Authentication Service" <auth@example.com>',
+      from: process.env.EMAIL_FROM,
       to,
       subject: 'Verify Your Email - Account Registration',
-      text: `Please verify your email by clicking this link: ${verificationLink}\n\nThis link will expire in 24 hours.`,
+      text: `Please verify your email by clicking this link: ${verificationLink}
+
+If you didn't request this email, please ignore it.
+This link will expire in 24 hours.`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e0e0e0; border-radius: 5px;">
-          <h2 style="color: #333;">Email Verification</h2>
-          <p>Thank you for registering! Please verify your email address by clicking the button below:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${verificationLink}" style="background-color: #4a90e2; color: white; padding: 12px 20px; text-decoration: none; border-radius: 4px; font-weight: bold;">Verify Email Address</a>
-          </div>
-          <p>Or copy and paste this link in your browser:</p>
-          <p style="word-break: break-all; color: #666;">${verificationLink}</p>
-          <p style="color: #888; margin-top: 30px; font-size: 14px;">This link will expire in 24 hours. If you didn't create this account, you can safely ignore this email.</p>
-        </div>
-      `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
+        <h2>Verify Your Email</h2>
+        <p>Thank you for registering! Please verify your email by clicking the button below:</p>
+        <p>
+          <a href="${verificationLink}" 
+             style="
+               display: inline-block;
+               padding: 12px 24px;
+               background-color: #4CAF50;
+               color: white;
+               text-decoration: none;
+               border-radius: 4px;
+               margin: 10px 0;
+             ">
+            Verify Email
+          </a>
+        </p>
+        <p>If you didn't request this email, please ignore it.</p>
+        <p>This link will expire in 24 hours.</p>
+        <hr>
+        <p style="font-size: 12px; color: #666;">This is an automated message. Please do not reply.</p>
+      </div>`
+    });
+
+    logger.info('Verification email sent successfully', { 
+      to,
+      messageId: info.messageId,
+      previewUrl: info.preview,
+      response: info.response
     });
     
-    // Always log the verification link in development to help with testing
-    if (isDev) {
-      logger.info('Verification email sent to:', to);
-      logger.info('Verification link:', verificationLink);
-      if (info.messageId) {
-        logger.info('Email message ID:', info.messageId);
-      }
-      
-      // If using ethereal.email for testing, provide preview URL
-      if (info.preview) {
-        logger.info('Email preview URL:', info.preview);
-      }
-    }
-    
-    return { success: true, message: 'Verification email sent' };
+    return { success: true, message: 'Verification email sent successfully' };
   } catch (error) {
-    logger.error('Failed to send verification email:', error);
+    logger.error('Failed to send verification email:', { 
+      error: error.message,
+      stack: error.stack,
+      email: to,
+      verificationLink,
+      response: error.response,
+      errorDetails: {
+        code: error.code,
+        message: error.message,
+        response: error.response
+      }
+    });
     
+    // Throw the error with more details
+    throw new Error(`Failed to send verification email: ${error.message}. Error code: ${error.code}`);
+  }  
     // In development, return the verification link even if email fails
     // This allows testing without email setup
     if (isDev) {

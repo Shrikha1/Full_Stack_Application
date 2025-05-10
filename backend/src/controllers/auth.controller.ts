@@ -53,28 +53,18 @@ export const authController = {
       const response: any = {
         message: 'Registration successful. Please check your email to verify your account.'
       };
-      
-      // Include verification details in development mode
-      if (process.env.NODE_ENV !== 'production') {
+
+      // Include verification details only in development mode
+      if (process.env.NODE_ENV !== 'production' && !process.env.RENDER) {
         const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
         const verificationLink = `${frontendUrl}/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
         
-        // Add development testing info
-        response.devInfo = {
-          verificationToken,
-          verificationLink,
-          emailSent: emailResult.success,
-          manualVerifyUrl: `${req.protocol}://${req.get('host')}/api/auth/dev/verify/${email}`,
-          message: 'These details are only included in development mode'
-        };
-        
-        // Log verification details prominently
-        logger.info('=== VERIFICATION DETAILS (DEV ONLY) ===');
+        // Log verification details for debugging
+        logger.info('=== VERIFICATION DETAILS ===');
         logger.info(`Email: ${email}`);
         logger.info(`Token: ${verificationToken}`);
         logger.info(`Verify Link: ${verificationLink}`);
-        logger.info(`Manual API: ${response.devInfo.manualVerifyUrl}`);
-        logger.info('=====================================');
+        logger.info('================================');
       }
       
       res.status(201).json(response);
@@ -92,10 +82,13 @@ export const authController = {
         throw new AppError(401, 'Invalid email or password', true);
       }
 
-      // TEMPORARY BYPASS FOR PRODUCTION: Allow users to log in without verification
-      // until the dashboard and email verification systems are fully functional
-      
-      // Check if we should enforce email verification
+      // Verify password
+      const validPassword = await bcrypt.compare(password, user.password);
+      if (!validPassword) {
+        throw new AppError(401, 'Invalid email or password', true);
+      }
+
+      // Check if email verification is enforced
       const enforcedDate = new Date('2025-06-15T00:00:00Z'); // Future date when verification will be required
       const currentDate = new Date();
       
@@ -131,24 +124,10 @@ export const authController = {
               resendUrl: `${req.protocol}://${req.get('host')}/api/auth/resend-verification`
             }
           });
-        } else {
-          // Standard error in production
-          throw new AppError(401, message, true, { code: 'ACCOUNT_NOT_VERIFIED' });
-        }
-      }
-      
-      // If user is not verified but verification is skipped, log this event
-      if (!user.verified && skipVerification) {
-        logger.warn(`VERIFICATION BYPASSED: User ${user.email} logged in without verification due to SKIP_EMAIL_VERIFICATION flag`);
-      }
 
-      const valid = await bcrypt.compare(password, user.password);
-      if (!valid) {
-        throw new AppError(401, 'Invalid email or password', true);
-      }
-
+      // Generate tokens
       const tokens = generateTokens(user.id, user.email);
-      
+
       // Set cookies with proper CORS settings
       const cookieOptions = {
         httpOnly: true,
@@ -217,13 +196,99 @@ export const authController = {
       const verificationToken = crypto.randomBytes(32).toString('hex');
       const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
+      // Update user with new verification token
       user.verificationToken = verificationToken;
       user.verificationTokenExpires = verificationTokenExpires;
       await user.save();
 
+      try {
+        // Send verification email
+        const emailResult = await sendVerificationEmail(email, verificationToken);
+        if (!emailResult.success) {
+          throw new AppError(500, 'Failed to send verification email', true);
+        }
+
+        res.json({ message: 'Verification email sent successfully' });
+      } catch (emailError) {
+        // If email sending fails, revert the token changes
+        user.verificationToken = undefined;
+        user.verificationTokenExpires = undefined;
+        await user.save();
+
+        throw new AppError(500, 'Failed to send verification email', true, {
+          error: emailError.message,
+          code: 'EMAIL_SEND_FAILED'
+        });
+      }
+    } catch (error) {
+      logger.error('Error in resendVerification:', {
+        error: error.message,
+        stack: error.stack,
+        email: req.body.email
+      });
+      next(error);
+    }
+
       await sendVerificationEmail(email, verificationToken);
 
       res.json({ message: 'Verification email sent' });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async forgotPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email } = req.body;
+
+      const user = await User.findOne({ where: { email } });
+      if (!user) {
+        // Don't reveal whether the email exists for security reasons
+        return res.json({ message: 'If an account exists with this email, a password reset link has been sent' });
+      }
+
+      // Generate reset token
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour expiry
+
+      user.resetToken = resetToken;
+      user.resetTokenExpires = resetTokenExpires;
+      await user.save();
+
+      // Send reset password email
+      await sendForgotPasswordEmail(email, resetToken);
+
+      res.json({ message: 'Password reset link has been sent to your email' });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async resetPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { token, password } = req.body;
+
+      const user = await User.findOne({
+        where: {
+          resetToken: token,
+          resetTokenExpires: { [Op.gt]: new Date() }
+        }
+      });
+
+      if (!user) {
+        throw new AppError(400, 'Invalid or expired password reset token', true);
+      }
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(password, 10);
+      
+      // Clear reset token and update password
+      user.resetToken = undefined;
+      user.resetTokenExpires = undefined;
+      user.password = hashedPassword;
+      await user.save();
+
+      res.json({ message: 'Password has been reset successfully' });
     } catch (error) {
       next(error);
     }
