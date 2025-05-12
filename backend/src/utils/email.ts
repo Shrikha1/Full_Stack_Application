@@ -76,6 +76,26 @@ function createDefaultTransport(): nodemailer.Transporter {
   } as any);
 }
 
+// Enhanced: Log all outgoing emails, successes, and errors
+export async function sendVerificationEmail(to: string, verificationToken: string): Promise<{ success: boolean; message: string; verificationLink?: string }> {
+  try {
+    const verificationLink = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email/${verificationToken}`;
+    const mailOptions = {
+      from: process.env.EMAIL_FROM,
+      to,
+      subject: 'Verify your email',
+      html: `<p>Please verify your email by clicking <a href="${verificationLink}">here</a>.</p>`
+    };
+    logger.info('Attempting to send verification email', { to, verificationLink });
+    const info = await transporter.sendMail(mailOptions);
+    logger.info('Verification email sent', { to, messageId: info.messageId, response: info.response });
+    return { success: true, message: 'Verification email sent', verificationLink };
+  } catch (error: any) {
+    logger.error('Failed to send verification email', { to, error: error?.message || error });
+    return { success: false, message: 'Failed to send verification email', verificationLink: undefined };
+  }
+}
+
 // Export function to verify a user directly (for admin/testing purposes)
 export async function verifyUserByEmail(email: string): Promise<{ success: boolean; message: string }> {
   try {
