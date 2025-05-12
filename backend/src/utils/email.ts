@@ -121,24 +121,7 @@ export async function verifyUserByEmail(email: string): Promise<{ success: boole
   }
 }
 
-export async function sendVerificationEmail(to: string, verificationToken: string): Promise<{ success: boolean; message: string; verificationLink?: string }> {
-  // Generate the verification link
-  const frontendUrl = process.env.FRONTEND_URL || 
-    ((process.env.NODE_ENV === 'production' || process.env.RENDER === 'true' || process.env.NETLIFY === 'true')
-      ? 'https://stellar-unicorn-be7810.netlify.app'
-      : 'http://localhost:5173');
-  const verificationLink = `${frontendUrl}/verify-email?token=${verificationToken}&email=${encodeURIComponent(to)}`;
 
-  // Log detailed email configuration
-  logger.info('Email configuration:', {
-    to,
-    frontendUrl,
-    verificationLink,
-    emailFrom: process.env.EMAIL_FROM,
-    sendgridApiKey: process.env.SENDGRID_API_KEY ? 'SET' : 'NOT SET',
-    nodeEnv: process.env.NODE_ENV,
-    renderEnv: process.env.RENDER
-  });
 
   // Check if we have the required email configuration
   if (!process.env.SENDGRID_API_KEY) {
