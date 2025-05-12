@@ -1,5 +1,281 @@
 import { Request, Response, NextFunction } from 'express';
 import { User } from '../models';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+
+export const authController = {
+  async register(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required.' });
+      }
+      const emailRegex = /^[^\s@]+@[^]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: 'Invalid email format.' });
+      }
+      if (password.length < 8) {
+        return res.status(400).json({ message: 'Password must be at least 8 characters.' });
+      }
+      const existingUser = await User.findOne({ where: { email } });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Email already registered.' });
+      }
+      await User.create({ email, password });
+      return res.status(201).json({ message: 'User registered successfully.' });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async login(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required.' });
+      }
+      const user = await User.findOne({ where: { email } });
+      if (!user) {
+        return res.status(401).json({ message: 'Invalid credentials.' });
+      }
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      if (!passwordMatch) {
+        return res.status(401).json({ message: 'Invalid credentials.' });
+      }
+      const token = jwt.sign(
+        { id: user.id, email: user.email },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '1d' }
+      );
+      return res.status(200).json({ token });
+    } catch (error) {
+      next(error);
+    }
+  }
+};
+
+import { User } from '../models';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+
+export const authController = {
+  async register(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required.' });
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: 'Invalid email format.' });
+      }
+      if (password.length < 8) {
+        return res.status(400).json({ message: 'Password must be at least 8 characters.' });
+      }
+      const existingUser = await User.findOne({ where: { email } });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Email already registered.' });
+      }
+      await User.create({ email, password });
+      return res.status(201).json({ message: 'User registered successfully.' });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async login(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required.' });
+      }
+      const user = await User.findOne({ where: { email } });
+      if (!user) {
+        return res.status(401).json({ message: 'Invalid credentials.' });
+      }
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      if (!passwordMatch) {
+        return res.status(401).json({ message: 'Invalid credentials.' });
+      }
+      const token = jwt.sign(
+        { id: user.id, email: user.email },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '1d' }
+      );
+      return res.status(200).json({ token });
+    } catch (error) {
+      next(error);
+    }
+  }
+};
+
+import { User } from '../models';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+
+export const authController = {
+  async register(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required.' });
+      }
+      const emailRegex = /^[^\s@]+@[^\\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: 'Invalid email format.' });
+      }
+      if (password.length < 8) {
+        return res.status(400).json({ message: 'Password must be at least 8 characters.' });
+      }
+      const existingUser = await User.findOne({ where: { email } });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Email already registered.' });
+      }
+      await User.create({ email, password });
+      return res.status(201).json({ message: 'User registered successfully.' });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async login(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required.' });
+      }
+      const user = await User.findOne({ where: { email } });
+      if (!user) {
+        return res.status(401).json({ message: 'Invalid credentials.' });
+      }
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      if (!passwordMatch) {
+        return res.status(401).json({ message: 'Invalid credentials.' });
+      }
+      const token = jwt.sign(
+        { id: user.id, email: user.email },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '1d' }
+      );
+      return res.status(200).json({ token });
+    } catch (error) {
+      next(error);
+    }
+  }
+};
+
+import { User } from '../models';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+
+export const authController = {
+  async register(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required.' });
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: 'Invalid email format.' });
+      }
+      if (password.length < 8) {
+        return res.status(400).json({ message: 'Password must be at least 8 characters.' });
+      }
+      const existingUser = await User.findOne({ where: { email } });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Email already registered.' });
+      }
+      await User.create({ email, password });
+      return res.status(201).json({ message: 'User registered successfully.' });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async login(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required.' });
+      }
+      const user = await User.findOne({ where: { email } });
+      if (!user) {
+        return res.status(401).json({ message: 'Invalid credentials.' });
+      }
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      if (!passwordMatch) {
+        return res.status(401).json({ message: 'Invalid credentials.' });
+      }
+      const token = jwt.sign(
+        { id: user.id, email: user.email },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '1d' }
+      );
+      return res.status(200).json({ token });
+    } catch (error) {
+      next(error);
+    }
+  }
+};
+
+import { User } from '../models';
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+
+export const authController = {
+  async register(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email, password } = req.body;
+      // Basic validation
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required.' });
+      }
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(email)) {
+        return res.status(400).json({ message: 'Invalid email format.' });
+      }
+      if (password.length < 8) {
+        return res.status(400).json({ message: 'Password must be at least 8 characters.' });
+      }
+      const existingUser = await User.findOne({ where: { email } });
+      if (existingUser) {
+        return res.status(400).json({ message: 'Email already registered.' });
+      }
+      await User.create({ email, password });
+      return res.status(201).json({ message: 'User registered successfully.' });
+    } catch (error) {
+      next(error);
+    }
+  },
+
+  async login(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) {
+        return res.status(400).json({ message: 'Email and password are required.' });
+      }
+      const user = await User.findOne({ where: { email } });
+      if (!user) {
+        return res.status(401).json({ message: 'Invalid credentials.' });
+      }
+      const passwordMatch = await bcrypt.compare(password, user.password);
+      if (!passwordMatch) {
+        return res.status(401).json({ message: 'Invalid credentials.' });
+      }
+      const token = jwt.sign(
+        { id: user.id, email: user.email },
+        process.env.JWT_SECRET || 'your-secret-key',
+        { expiresIn: '1d' }
+      );
+      return res.status(200).json({ token });
+    } catch (error) {
+      next(error);
+    }
+  }
+};
+
+import { User } from '../models';
 import { AppError } from '../utils/error';
 import { logger } from '../utils/logger';
 import bcrypt from 'bcrypt';
@@ -68,17 +344,23 @@ export const authController = {
       };
 
       // Include verification details only in development mode
-      if (process.env.NODE_ENV !== 'production' && !process.env.RENDER) {
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        const verificationLink = `${frontendUrl}/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
-        
-        // Log verification details for debugging
-        logger.info('=== VERIFICATION DETAILS ===');
-        logger.info(`Email: ${email}`);
-        logger.info(`Token: ${verificationToken}`);
-        logger.info(`Verify Link: ${verificationLink}`);
-        logger.info('================================');
-      }
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+const verificationLink = `${frontendUrl}/verify-email?token=${verificationToken}&email=${encodeURIComponent(email)}`;
+if (process.env.NODE_ENV !== 'production' && !process.env.RENDER) {
+  // Log verification details for debugging
+  logger.info('=== VERIFICATION DETAILS ===');
+  logger.info(`Email: ${email}`);
+  logger.info(`Token: ${verificationToken}`);
+  logger.info(`Verify Link: ${verificationLink}`);
+  logger.info('================================');
+  response.devInfo = {
+    verificationToken,
+    verificationLink,
+    emailSent: emailResult?.success,
+    manualVerifyUrl: `${req.protocol}://${req.get('host')}/api/auth/dev/verify/${encodeURIComponent(email)}`,
+    message: 'These details are only included in development mode'
+  };
+}
       
       res.status(201).json(response);
     } catch (error) {
@@ -309,13 +591,10 @@ export const authController = {
         throw new AppError(400, 'Invalid or expired password reset token', true);
       }
 
-      // Hash new password
-      const hashedPassword = await bcrypt.hash(password, 10);
-      
       // Clear reset token and update password
       user.resetToken = undefined;
       user.resetTokenExpires = undefined;
-      user.password = hashedPassword;
+      user.password = password;
       await user.save();
 
       res.json({ message: 'Password has been reset successfully' });
