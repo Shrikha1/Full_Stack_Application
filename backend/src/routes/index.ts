@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { authenticateToken } from '../middleware/auth';
-import { authController } from '../controllers/auth';
-import { salesforceController } from '../controllers/salesforce';
+import { authController } from '../controllers/auth.controller';
+import { salesforceController } from '../controllers/salesforce.controller';
 
 const router = Router();
 

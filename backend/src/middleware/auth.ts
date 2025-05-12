@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express'
 import { verifyAccessToken } from '../utils/jwt'
-import { User } from '../models'
+
 import { logger } from '../utils/logger'
 
 interface JwtPayload {

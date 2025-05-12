@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 import { logger } from './logger';
-import { User } from '../models';
+
 
 // For development environment: temporarily disable verification requirement
 const isDev = process.env.NODE_ENV !== 'production';
@@ -43,34 +43,6 @@ let transporter: nodemailer.Transporter = createDefaultTransport();
       });
       
       logger.info('Development email transport initialized with Ethereal', {
-        user: testAccount.user
-      });
-    } catch (error) {
-      logger.error('Failed to create test account, using default transport', { error });
-    }
-  }
-          user: testAccount.user
-        });
-      } catch (error) {
-        logger.error('Failed to create test account, using default transport', { error });
-      }
-    }
-  } else {
-    // Development mode - create an ethereal account
-    try {
-      const testAccount = await nodemailer.createTestAccount();
-      
-      transporter = nodemailer.createTransport({
-        host: 'smtp.ethereal.email',
-        port: 587,
-        secure: false,
-        auth: {
-          user: testAccount.user,
-          pass: testAccount.pass
-        }
-      });
-      
-      logger.info('Created Ethereal test account for development', {
         user: testAccount.user,
         pass: testAccount.pass
       });
@@ -78,7 +50,7 @@ let transporter: nodemailer.Transporter = createDefaultTransport();
       logger.error('Failed to create test account, using default transport', { error });
     }
   }
-})().catch(err => logger.error('Error initializing email transport', { error: err }));
+})();
 
 // Create a default email transport as a fallback
 function createDefaultTransport(): nodemailer.Transporter {
@@ -131,11 +103,9 @@ export async function verifyUserByEmail(email: string): Promise<{ success: boole
 export async function sendVerificationEmail(to: string, verificationToken: string): Promise<{ success: boolean; message: string; verificationLink?: string }> {
   // Generate the verification link
   const frontendUrl = process.env.FRONTEND_URL || 
-  (process.env.NODE_ENV === 'production' || 
-   process.env.RENDER === 'true' || 
-   process.env.NETLIFY === 'true') 
-    ? 'https://stellar-unicorn-be7810.netlify.app' 
-    : 'http://localhost:5173';
+    ((process.env.NODE_ENV === 'production' || process.env.RENDER === 'true' || process.env.NETLIFY === 'true')
+      ? 'https://stellar-unicorn-be7810.netlify.app'
+      : 'http://localhost:5173');
   const verificationLink = `${frontendUrl}/verify-email?token=${verificationToken}&email=${encodeURIComponent(to)}`;
 
   // Log detailed email configuration
@@ -203,7 +173,7 @@ This link will expire in 24 hours.`,
     });
     
     return { success: true, message: 'Verification email sent successfully' };
-  } catch (error) {
+  } catch (error: any) {
     logger.error('Failed to send verification email:', { 
       error: error.message,
       stack: error.stack,
@@ -216,18 +186,13 @@ This link will expire in 24 hours.`,
         response: error.response
       }
     });
-    
-    // Throw the error with more details
-    throw new Error(`Failed to send verification email: ${error.message}. Error code: ${error.code}`);
-  }  
     // In development, return the verification link even if email fails
-    // This allows testing without email setup
     if (isDev) {
       logger.info('DEV MODE: Providing verification link despite email failure');
       logger.info('Verification link:', verificationLink);
       return { success: false, verificationLink, message: 'Email failed but link provided for testing' };
     }
-    
-    return { success: false, message: 'Failed to send verification email' };
+    // In production, throw the error
+    throw new Error(`Failed to send verification email: ${error.message}. Error code: ${error.code}`);
   }
 }

@@ -4,7 +4,7 @@ import { authenticateToken } from '../middleware/auth';
 import { validateAdminToken } from '../middleware/admin.middleware';
 import { validate } from '../middleware/validate.middleware';
 import { registerJoiSchema, loginJoiSchema } from '../validations/auth.joi';
-import { User } from '../models';
+
 import { logger } from '../utils/logger';
 import { verifyUserByEmail } from '../utils/email';
 

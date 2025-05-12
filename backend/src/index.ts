@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
-import sequelize from './config/database';
+
 import { logger } from './utils/logger';
 import { errorHandler } from './utils/errorHandler';
 import authRoutes from './routes/auth.routes';
@@ -87,21 +87,6 @@ app.use('/api/salesforce', salesforceRoutes);
 // Error handling (should be last middleware)
 app.use(errorHandler);
 
-// Database connection
-sequelize
-  .authenticate()
-  .then(() => {
-    logger.info('Database connection has been established successfully.');
-    // Sync models to create tables if they do not exist
-    return sequelize.sync();
-  })
-  .then(() => {
-    logger.info('All models were synchronized successfully.');
-  })
-  .catch((error: any) => {
-    logger.error('Unable to connect to or synchronize the database:', error.message);
-    process.exit(1);
-  });
 
 // Start server
 const PORT = process.env.PORT || 3000;
