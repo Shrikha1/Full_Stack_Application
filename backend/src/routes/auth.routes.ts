@@ -6,6 +6,7 @@ import { validate } from '../middleware/validate.middleware';
 import { registerJoiSchema, loginJoiSchema } from '../validations/auth.joi';
 
 import { logger } from '../utils/logger';
+import { prisma } from '../lib/prisma';
 import { verifyUserByEmail } from '../utils/email';
 
 const router = Router();
@@ -39,9 +40,9 @@ router.get('/admin/verify/:email', validateAdminToken, async (req, res) => {
 
 router.get('/admin/users', validateAdminToken, async (_req, res) => {
   try {
-    const users = await User.findAll({ 
-      attributes: ['id', 'email', 'verified', 'createdAt']
-    });
+    const users = await prisma.user.findMany({
+  select: { id: true, email: true, verified: true, createdAt: true }
+});
     res.json({ users });
   } catch (error) {
     logger.error('Error fetching users via admin route', { error });
@@ -56,7 +57,7 @@ if (process.env.NODE_ENV !== 'production') {
       const { email } = req.params;
       
       // Find the user
-      const user = await User.findOne({ where: { email } });
+      const user = await prisma.user.findUnique({ where: { email } });
       
       if (!user) {
         res.status(404).json({ message: 'User not found' });
@@ -64,8 +65,10 @@ if (process.env.NODE_ENV !== 'production') {
       }
       
       // Mark as verified
-      user.verified = true;
-      await user.save();
+      await prisma.user.update({
+  where: { id: user.id },
+  data: { verified: true }
+});
       
       logger.info(`DEV ROUTE: User ${email} manually verified`);
       
@@ -82,9 +85,9 @@ if (process.env.NODE_ENV !== 'production') {
   // List all users (DEV ONLY)
   router.get('/dev/users', async (_req, res): Promise<void> => {
     try {
-      const users = await User.findAll({ 
-        attributes: ['id', 'email', 'verified', 'createdAt']
-      });
+      const users = await prisma.user.findMany({
+  select: { id: true, email: true, verified: true, createdAt: true }
+});
       res.json({ users });
     } catch (error) {
       logger.error('Error fetching users', { error });

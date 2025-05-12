@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { logger } from './logger';
+import { prisma } from '../lib/prisma';
 
 
 // For development environment: temporarily disable verification requirement
@@ -78,7 +79,7 @@ function createDefaultTransport(): nodemailer.Transporter {
 // Export function to verify a user directly (for admin/testing purposes)
 export async function verifyUserByEmail(email: string): Promise<{ success: boolean; message: string }> {
   try {
-    const user = await User.findOne({ where: { email } });
+    const user = await prisma.user.findUnique({ where: { email } });
     
     if (!user) {
       return { success: false, message: 'User not found' };
@@ -90,7 +91,7 @@ export async function verifyUserByEmail(email: string): Promise<{ success: boole
     
     // Mark user as verified
     user.verified = true;
-    await user.save();
+    await prisma.user.update({ where: { id: user.id }, data: { verified: true } });
     
     logger.info(`User ${email} manually verified`);
     return { success: true, message: 'User verified successfully' };

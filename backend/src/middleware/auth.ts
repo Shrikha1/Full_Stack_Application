@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from 'express'
 import { verifyAccessToken } from '../utils/jwt'
 
 import { logger } from '../utils/logger'
+import { prisma } from '../lib/prisma';
 
 interface JwtPayload {
   userId: string
@@ -44,7 +45,7 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       logger.warn('Invalid token type', { path: req.path })
       return res.status(401).json({ message: 'Invalid token type' });
     }
-    const user = await User.findByPk(decoded.userId);
+    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
     if (!user) {
       logger.warn('User not found for token', { userId: decoded.userId })
       return res.status(401).json({ message: 'User not found' });

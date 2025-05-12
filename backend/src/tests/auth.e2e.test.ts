@@ -1,6 +1,6 @@
 import request from 'supertest';
 import app from '../index'; // Make sure your Express app is exported from index.ts
-import sequelize from '../config/database';
+
 
 describe('Auth End-to-End', () => {
   const testEmail = 'e2euser@example.com';
@@ -8,11 +8,11 @@ describe('Auth End-to-End', () => {
   let jwtToken: string;
 
   beforeAll(async () => {
-    await sequelize.sync({ force: true }); // Reset DB for test
+    // Removed: sequelize.sync({ force: true })
   });
 
   afterAll(async () => {
-    await sequelize.close();
+    // Removed: sequelize.close()
   });
 
   it('should register a new user', async () => {

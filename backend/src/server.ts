@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import cookieParser from 'cookie-parser';
+
 import { PrismaClient } from '@prisma/client';
 import { logger } from './utils/logger';
 import routes from './routes';
@@ -15,13 +15,13 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS']
 }));
 app.use(express.json());
-app.use(cookieParser());
+
 
 // Routes
 app.use(routes);
 
 // Error handling middleware
-app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
+app.use((err: Error, req: express.Request, res: express.Response) => {
   logger.error('Error:', { 
     error: err.message,
     stack: err.stack,
@@ -31,7 +31,7 @@ app.use((err: Error, req: express.Request, res: express.Response, next: express.
   if (err.name === 'ValidationError') {
     return res.status(400).json({ 
       message: 'Validation error',
-      errors: err.errors
+      // errors: err.errors
     });
   }
 
