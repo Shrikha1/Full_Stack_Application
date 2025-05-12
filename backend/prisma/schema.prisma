@@ -1,0 +1,70 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  password      String
+  verified      Boolean   @default(false)
+  verificationToken String? @unique
+  verificationTokenExpires DateTime?
+  resetToken     String? @unique
+  resetTokenExpires DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  sessions      Session[]
+  salesforceAccounts SalesforceAccount[]
+
+  @@index([email])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model SalesforceAccount {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  accountNumber String?
+  type        String?
+  industry    String?
+  rating      String?
+  phone       String?
+  website     String?
+  annualRevenue Int?
+  numberOfEmployees Int?
+  billingStreet String?
+  billingCity String?
+  billingState String?
+  billingPostalCode String?
+  billingCountry String?
+  shippingStreet String?
+  shippingCity  String?
+  shippingState String?
+  shippingPostalCode String?
+  shippingCountry String?
+  description  String?
+  ownerId      String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}

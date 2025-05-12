@@ -15,7 +15,7 @@ A production-ready full-stack web application with Vue.js 3 frontend, Node.js/Ex
 
 - User authentication with JWT
 - Secure password hashing
-- Salesforce integration for Account data
+- Salesforce integration with user verification
 - Protected routes and API endpoints
 - Responsive dashboard with pagination
 - Unit tests for core functionality
@@ -27,6 +27,24 @@ A production-ready full-stack web application with Vue.js 3 frontend, Node.js/Ex
 - Salesforce Developer Account
 - Render Account (for backend deployment)
 - Netlify Account (for frontend deployment)
+
+## 📝 Salesforce Configuration
+
+1. Create a Salesforce Connected App and get:
+   - Client ID
+   - Client Secret
+   - Username
+   - Password
+   - Security Token
+
+2. Update your `.env` file with Salesforce credentials:
+   ```env
+   SALESFORCE_CLIENT_ID=your_client_id
+   SALESFORCE_CLIENT_SECRET=your_client_secret
+   SALESFORCE_USERNAME=your_sf_username
+   SALESFORCE_PASSWORD=your_sf_password
+   SALESFORCE_TOKEN=your_sf_token
+   ```
 
 ## 🛠️ Tech Stack
 
@@ -123,9 +141,8 @@ VITE_API_BASE_URL=https://full-stack-application-zvvd.onrender.com
 
 | Method | Endpoint                        | Description                   |
 |--------|----------------------------------|-------------------------------|
-| POST   | /api/auth/register               | Register user                 |
-| POST   | /api/auth/login                  | Login and get JWT             |
-| GET    | /api/auth/session                | Check session (JWT/cookie)    |
+| POST   | /api/auth/register               | Register with Salesforce credentials |
+| POST   | /api/auth/login                  | Login with Salesforce verification |
 | POST   | /api/auth/logout                 | Logout user                   |
 | GET    | /api/salesforce/accounts         | Get Salesforce Accounts       |
 | GET    | /api/salesforce/accounts/:id     | Get Account by ID             |

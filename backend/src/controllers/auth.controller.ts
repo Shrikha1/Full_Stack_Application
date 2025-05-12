@@ -7,6 +7,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import { sendVerificationEmail } from '../utils/email';
 import { Op } from 'sequelize';
+import { SalesforceService } from '../services/salesforce';
 
 const REFRESH_TOKEN_COOKIE = 'refreshToken';
 
@@ -27,23 +28,35 @@ function generateTokens(userId: string, email: string) {
 export const authController = {
   async register(req: Request, res: Response, next: NextFunction) {
     try {
-      const { email, password } = req.body;
+      const { email, password, salesforceUsername, salesforcePassword } = req.body;
+
+      if (!email || !password || !salesforceUsername || !salesforcePassword) {
+        throw new AppError(400, 'All fields are required: email, password, salesforceUsername, salesforcePassword', true);
+      }
 
       const existingUser = await User.findOne({ where: { email } });
       if (existingUser) {
         throw new AppError(400, 'Email already registered', true);
       }
 
-      const verificationToken = crypto.randomBytes(32).toString('hex');
-      const verificationTokenExpires = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      // Verify Salesforce credentials
+      const salesforceService = new SalesforceService();
+      try {
+        const sfAuth = await salesforceService.authenticate(salesforceUsername, salesforcePassword);
+        if (!sfAuth.success) {
+          throw new AppError(400, 'Invalid Salesforce credentials', true);
+        }
+      } catch (error) {
+        logger.error('Salesforce authentication failed during registration:', error);
+        throw new AppError(400, 'Invalid Salesforce credentials', true);
+      }
 
-      // Create user with verification token
+      // Create user with Salesforce credentials
       await User.create({
         email,
         password,
-        verified: false,
-        verificationToken,
-        verificationTokenExpires
+        salesforceUsername,
+        salesforcePassword
       });
 
       // Send verification email
@@ -88,6 +101,18 @@ export const authController = {
         throw new AppError(401, 'Invalid email or password', true);
       }
 
+      // Verify Salesforce credentials
+      const salesforceService = new SalesforceService();
+      try {
+        const sfAuth = await salesforceService.authenticate(user.salesforceUsername, user.salesforcePassword);
+        if (!sfAuth.success) {
+          throw new AppError(401, 'Invalid Salesforce credentials', true);
+        }
+      } catch (error) {
+        logger.error('Salesforce authentication failed:', error);
+        throw new AppError(401, 'Invalid Salesforce credentials', true);
+      }
+
       // Check if email verification is enforced
       const enforcedDate = new Date('2025-06-15T00:00:00Z'); // Future date when verification will be required
       const currentDate = new Date();
@@ -124,6 +149,10 @@ export const authController = {
               resendUrl: `${req.protocol}://${req.get('host')}/api/auth/resend-verification`
             }
           });
+        } else {
+          throw new AppError(401, message, true);
+        }
+      }
 
       // Generate tokens
       const tokens = generateTokens(user.id, user.email);
@@ -142,10 +171,14 @@ export const authController = {
         maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
       });
 
+      // Get Salesforce user info
+      const sfUserInfo = await salesforceService.getUserInfo();
+
       res.status(200).json({
         user: {
           id: user.id,
           email: user.email,
+          salesforceInfo: sfUserInfo
         },
         message: 'Login successful.'
       });

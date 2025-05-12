@@ -2,10 +2,28 @@ import { Model, DataTypes } from 'sequelize';
 import bcrypt from 'bcrypt';
 import sequelize from '../config/database';
 
-class User extends Model {
+interface UserAttributes {
+  id: string;
+  email: string;
+  password: string;
+  salesforceUsername: string;
+  salesforcePassword: string;
+  salesforceAccessToken?: string;
+  salesforceRefreshToken?: string;
+  salesforceInstanceUrl?: string;
+  verified: boolean;
+  verificationToken?: string;
+  verificationTokenExpires?: Date;
+  createdAt?: Date;
+  updatedAt?: Date;
+}
+
+class User extends Model<UserAttributes> {
   public id!: string;
   public email!: string;
   public password!: string;
+  public salesforceUsername!: string;
+  public salesforcePassword!: string;
   public salesforceAccessToken?: string;
   public salesforceRefreshToken?: string;
   public salesforceInstanceUrl?: string;
@@ -36,6 +54,14 @@ User.init(
       },
     },
     password: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    salesforceUsername: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+    salesforcePassword: {
       type: DataTypes.STRING,
       allowNull: false,
     },
