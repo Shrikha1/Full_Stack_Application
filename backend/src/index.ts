@@ -10,6 +10,7 @@ import authRoutes from './routes/auth.routes';
 import salesforceRoutes from './routes/salesforce.routes';
 
 const app = express();
+app.set('trust proxy', 1); // trust first proxy for rate limiting and IP detection
 
 // CORS configuration - MUST be before helmet and other middleware
 const allowedOrigins = [
