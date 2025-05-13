@@ -13,6 +13,12 @@ const api = axios.create({
 // Request interceptor
 api.interceptors.request.use(
   config => {
+    // Attach Authorization header if token exists
+    const token = localStorage.getItem('accessToken');
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers['Authorization'] = `Bearer ${token}`;
+    }
     // Ensure we're not adding any custom headers that might trigger preflight
     if (config.method === 'post' || config.method === 'put') {
       config.headers['Content-Type'] = 'application/json';

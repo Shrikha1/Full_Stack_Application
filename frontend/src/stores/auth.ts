@@ -21,10 +21,10 @@ interface AuthUser {
 export const useAuthStore = defineStore('auth', {
   state: () => ({
     user: null as null | AuthUser,
-    accessToken: null as null | string,
+    accessToken: localStorage.getItem('accessToken'),
     loading: false,
     error: null as null | string,
-    isAuthenticated: false,
+    isAuthenticated: !!localStorage.getItem('accessToken'),
   }),
   getters: {},
   actions: {
@@ -43,6 +43,7 @@ export const useAuthStore = defineStore('auth', {
 
         this.user = { id: res.data.id, email: res.data.email };
         this.accessToken = res.data.token;
+        localStorage.setItem('accessToken', res.data.token);
         this.isAuthenticated = true;
         router.push('/dashboard');
         return true;
@@ -66,12 +67,22 @@ export const useAuthStore = defineStore('auth', {
         }
         this.user = null;
         this.accessToken = null;
+        localStorage.removeItem('accessToken');
         this.isAuthenticated = false;
         return false;
       } finally {
         this.loading = false;
       }
     },
+    // Call this on app start to restore session from localStorage
+    initializeAuth() {
+      const token = localStorage.getItem('accessToken');
+      if (token) {
+        this.accessToken = token;
+        this.isAuthenticated = true;
+      }
+    },
+
     async register(credentials: RegisterCredentials) {
       this.loading = true;
       this.error = null;
@@ -97,6 +108,8 @@ export const useAuthStore = defineStore('auth', {
       }
     },
     async logout() {
+      // Remove token from localStorage
+      localStorage.removeItem('accessToken');
       // Already logged out, avoid multiple calls
       if (!this.isAuthenticated && !this.accessToken && !this.user) {
         router.push('/login');
@@ -140,18 +153,7 @@ export const useAuthStore = defineStore('auth', {
         throw err;
       }
     },
-    async initializeAuth() {
-      if (!this.accessToken) return;
-      try {
-        // Optionally call /me or similar endpoint to get user info
-        // For now, just set isAuthenticated
-        this.isAuthenticated = true;
-      } catch {
-        this.accessToken = null;
-        this.user = null;
-        this.isAuthenticated = false;
-      }
-    },
+
     setUser(user: AuthUser | null) {
       this.user = user;
     },
