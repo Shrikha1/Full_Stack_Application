@@ -80,7 +80,7 @@ export const authController = {
       }
 
       const token = jwt.sign(
-        { id: user.id, email: user.email },
+        { id: user.id, email: user.email, type: 'access' },
         process.env.JWT_SECRET as string,
         { expiresIn: '1d' }
       );
