@@ -2,6 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../lib/prisma';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
+import { sendVerificationEmail } from '../utils/email';
 
 export const authController = {
   async register(req: Request, res: Response, next: NextFunction) {
@@ -22,15 +24,31 @@ export const authController = {
         return res.status(400).json({ message: 'Email already registered.' });
       }
       const hashedPassword = await bcrypt.hash(password, 10);
-      await prisma.user.create({
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+      const user = await prisma.user.create({
         data: {
           email,
           password: hashedPassword,
           verified: false,
-          // Add Salesforce fields if needed, or leave null
+          verificationToken,
+          verificationTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
         },
       });
-      return res.status(201).json({ message: 'User registered successfully.' });
+
+      // Send verification email
+      try {
+        const emailResult = await sendVerificationEmail(email, verificationToken);
+        console.log('Verification email result:', emailResult);
+        return res.status(201).json({
+          message: 'User registered successfully. Please check your email for verification link.',
+          verificationLink: process.env.NODE_ENV === 'development' ? emailResult.verificationLink : undefined
+        });
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError);
+        return res.status(201).json({
+          message: 'User registered but verification email could not be sent. Please contact support.'
+        });
+      }
     } catch (error) {
       next(error);
       return;
@@ -63,8 +81,39 @@ export const authController = {
     }
   },
 
-  async verifyEmail(_req: Request, res: Response, _next: NextFunction) {
-    return res.status(501).json({ message: 'Not implemented' });
+  async verifyEmail(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { token } = req.params;
+      if (!token) {
+        return res.status(400).json({ message: 'Verification token is required' });
+      }
+
+      const user = await prisma.user.findFirst({
+        where: {
+          verificationToken: token,
+          verificationTokenExpires: {
+            gt: new Date()
+          }
+        }
+      });
+
+      if (!user) {
+        return res.status(400).json({ message: 'Invalid or expired verification token' });
+      }
+
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          verified: true,
+          verificationToken: null,
+          verificationTokenExpires: null
+        }
+      });
+
+      return res.status(200).json({ message: 'Email verified successfully' });
+    } catch (error) {
+      next(error);
+    }
   },
   async resendVerification(_req: Request, res: Response, _next: NextFunction) {
     return res.status(501).json({ message: 'Not implemented' });
