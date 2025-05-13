@@ -25,7 +25,7 @@ export const authController = {
       }
       const hashedPassword = await bcrypt.hash(password, 10);
       const verificationToken = crypto.randomBytes(32).toString('hex');
-      const user = await prisma.user.create({
+      await prisma.user.create({
         data: {
           email,
           password: hashedPassword,
@@ -69,12 +69,26 @@ export const authController = {
       if (!passwordMatch) {
         return res.status(401).json({ message: 'Invalid credentials.' });
       }
+
+      // Check if email is verified
+      if (!user.verified) {
+        return res.status(403).json({
+          message: 'Please verify your email before logging in.',
+          verified: false,
+          email: user.email
+        });
+      }
+
       const token = jwt.sign(
         { id: user.id, email: user.email },
         process.env.JWT_SECRET as string,
         { expiresIn: '1d' }
       );
-      return res.status(200).json({ token });
+      return res.status(200).json({ 
+        token,
+        verified: true,
+        email: user.email
+      });
     } catch (error) {
       next(error);
       return res.status(500).json({ message: 'Internal Server Error' });
@@ -113,20 +127,63 @@ export const authController = {
       return res.status(200).json({ message: 'Email verified successfully' });
     } catch (error) {
       next(error);
+      return res.status(500).json({ message: 'Internal server error' });
     }
   },
-  async resendVerification(_req: Request, res: Response, _next: NextFunction) {
-    return res.status(501).json({ message: 'Not implemented' });
+  async resendVerification(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ message: 'Email is required.' });
+      }
+
+      const user = await prisma.user.findUnique({ where: { email } });
+      if (!user) {
+        return res.status(404).json({ message: 'User not found.' });
+      }
+
+      if (user.verified) {
+        return res.status(400).json({ message: 'Email is already verified.' });
+      }
+
+      // Generate new verification token
+      const verificationToken = crypto.randomBytes(32).toString('hex');
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          verificationToken,
+          verificationTokenExpires: new Date(Date.now() + 24 * 60 * 60 * 1000)
+        }
+      });
+
+      // Send new verification email
+      try {
+        const emailResult = await sendVerificationEmail(email, verificationToken);
+        return res.status(200).json({
+          message: 'Verification email sent successfully.',
+          verificationLink: process.env.NODE_ENV === 'development' ? emailResult.verificationLink : undefined
+        });
+      } catch (emailError) {
+        console.error('Failed to send verification email:', emailError);
+        return res.status(500).json({ message: 'Failed to send verification email.' });
+      }
+    } catch (error) {
+      next(error);
+      return res.status(500).json({ message: 'Internal server error' });
+    }
   },
   async refreshToken(_req: Request, res: Response, _next: NextFunction) {
     return res.status(501).json({ message: 'Not implemented' });
   },
+
   async forgotPassword(_req: Request, res: Response, _next: NextFunction) {
     return res.status(501).json({ message: 'Not implemented' });
   },
+
   async resetPassword(_req: Request, res: Response, _next: NextFunction) {
     return res.status(501).json({ message: 'Not implemented' });
   },
+
   async logout(_req: Request, res: Response, _next: NextFunction) {
     return res.status(501).json({ message: 'Not implemented' });
   }

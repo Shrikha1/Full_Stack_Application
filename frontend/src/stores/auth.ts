@@ -167,38 +167,17 @@ export const useAuthStore = defineStore('auth', {
     },
     async resendVerification(email: string) {
       this.loading = true;
-      this.error = null;
-      try {
-        const response = await api.post('/api/auth/resend-verification', { email });
-        this.error = 'SUCCESS: ' + response.data.message;
-        return true;
-      } catch (err: any) {
-        this.error = err.response?.data?.message || 'Failed to resend verification email';
-        return false;
-      } finally {
-        this.loading = false;
-      } {
-      this.loading = true;
       // Don't clear error here to maintain context about verification needs
       try {
         await api.post('/api/auth/resend-verification', { email });
-        // Show a success message that's distinctive from errors
-        // We'll handle it specially in the UI
-        this.error = 'SUCCESS: Verification email has been sent! Please check your inbox and spam folder.';
+        this.error = 'SUCCESS: Verification email has been sent. Please check your inbox.';
         return true;
       } catch (err: any) {
-        const errorMessage = err.response?.data?.message || '';
-        if (errorMessage.includes('already verified')) {
-          this.error = 'Your account is already verified. Please try logging in again.';
-        } else if (err.response?.status === 404) {
-          this.error = 'Email not found. Please check your email address or register first.';
-        } else {
-          this.error = 'Failed to send verification email. Please try again or contact support.';
-        }
+        this.error = err.response?.data?.message || 'Failed to send verification email. Please try again or contact support.';
         return false;
       } finally {
         this.loading = false;
       }
-    },
+    }
   },
 });
