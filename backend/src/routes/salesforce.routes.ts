@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { authenticateToken, authenticateJWT } from '../middleware/auth';
+import { authenticateToken } from '../middleware/auth';
 import { salesforceController } from '../controllers/salesforce.controller';
 import rateLimit from 'express-rate-limit';
 
@@ -24,6 +24,6 @@ router.use(salesforceLimiter);
 router.use(authenticateToken);
 
 // Account routes
-router.get('/accounts', authenticateJWT, salesforceController.getAccounts);
+router.get('/accounts', salesforceController.getAccounts);
 
 export default router;
