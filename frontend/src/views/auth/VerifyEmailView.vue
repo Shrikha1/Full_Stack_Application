@@ -68,6 +68,9 @@ const token = route.query.token as string;
 const email = route.query.email as string;
 
 // Verify the email when component is mounted
+import { useRouter } from 'vue-router';
+const router = useRouter();
+
 onMounted(async () => {
   if (!token) {
     loading.value = false;
@@ -79,6 +82,10 @@ onMounted(async () => {
   try {
     await api.get(`/api/auth/verify-email/${token}`);
     loading.value = false;
+    // Redirect after 3 seconds
+    setTimeout(() => {
+      router.push('/login');
+    }, 3000);
   } catch (err: any) {
     loading.value = false;
     error.value = true;
