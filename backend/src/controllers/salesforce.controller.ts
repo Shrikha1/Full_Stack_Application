@@ -15,6 +15,18 @@ function getSalesforceConnection() {
 
 export const salesforceController = {
   async getAccounts(req: Request, res: Response) {
+    // Debug: log the JWT user
+    console.log('req.user:', req.user);
+
+    // Defensive check: ensure JWT user is present
+    if (!req.user || !req.user.id) {
+      return res.status(401).json({ message: 'Unauthorized: No user in JWT' });
+    }
+
+    // (Optional) Check user exists in DB
+    // const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    // if (!user) return res.status(401).json({ message: 'User not found' });
+
     try {
       const conn = getSalesforceConnection();
       await conn.login(process.env.SF_USERNAME!, process.env.SF_PASSWORD! + process.env.SF_SECURITY_TOKEN!);
@@ -30,10 +42,10 @@ export const salesforceController = {
         .skip(skip)
         .limit(pageSize)
         .execute();
-      res.status(200).json({ accounts: result, page, pageSize, total });
+      return res.status(200).json({ accounts: result, page, pageSize, total });
     } catch (error) {
       // Never expose secrets or stack traces
-      res.status(500).json({ message: 'Failed to fetch Salesforce accounts', code: 'SALESFORCE_ERROR' });
+      return res.status(500).json({ message: 'Failed to fetch Salesforce accounts', code: 'SALESFORCE_ERROR' });
     }
   },
 };

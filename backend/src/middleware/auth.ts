@@ -6,9 +6,9 @@ import { logger } from '../utils/logger'
 import { prisma } from '../lib/prisma';
 
 interface JwtPayload {
-  userId: string
-  email: string
-  type: 'access' | 'refresh'
+  id: string;
+  email: string;
+  type: 'access' | 'refresh';
 }
 
 declare global {
@@ -45,9 +45,9 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
       logger.warn('Invalid token type', { path: req.path })
       return res.status(401).json({ message: 'Invalid token type' });
     }
-    const user = await prisma.user.findUnique({ where: { id: decoded.userId } });
+    const user = await prisma.user.findUnique({ where: { id: decoded.id } });
     if (!user) {
-      logger.warn('User not found for token', { userId: decoded.userId })
+      logger.warn('User not found for token', { id: decoded.id })
       return res.status(401).json({ message: 'User not found' });
     }
     req.user = { id: user.id, email: user.email };
