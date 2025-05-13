@@ -6,6 +6,8 @@ import VerifyEmailView from '../views/auth/VerifyEmailView.vue';
 import TestVerificationView from '../views/auth/TestVerificationView.vue';
 import { useAuthStore } from '../stores/auth';
 
+import VerifiedSuccessView from '../views/auth/VerifiedSuccessView.vue';
+
 const routes = [
   {
     path: '/login',
@@ -20,7 +22,7 @@ const routes = [
     meta: { requiresAuth: false },
   },
   {
-    path: '/verify-email',
+    path: '/verify-email/:token',
     name: 'VerifyEmail',
     component: VerifyEmailView,
     meta: { requiresAuth: false },
@@ -36,6 +38,12 @@ const routes = [
     name: 'Dashboard',
     component: DashboardView,
     meta: { requiresAuth: true },
+  },
+  {
+    path: '/verified-success',
+    name: 'VerifiedSuccess',
+    component: VerifiedSuccessView,
+    meta: { requiresAuth: false },
   },
   {
     path: '/:catchAll(.*)',

@@ -63,8 +63,8 @@ const error = ref(false);
 const errorMessage = ref('');
 const resendSuccess = ref(false);
 
-// Get token and email from URL params
-const token = route.query.token as string;
+// Get token from route params
+const token = route.params.token as string;
 const email = route.query.email as string;
 
 // Verify the email when component is mounted
@@ -82,10 +82,8 @@ onMounted(async () => {
   try {
     await api.get(`/api/auth/verify-email/${token}`);
     loading.value = false;
-    // Redirect after 3 seconds
-    setTimeout(() => {
-      router.push('/login');
-    }, 3000);
+    // Route to dedicated success page
+    router.push({ name: 'VerifiedSuccess' });
   } catch (err: any) {
     loading.value = false;
     error.value = true;
