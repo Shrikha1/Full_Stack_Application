@@ -32,13 +32,17 @@ export const useAuthStore = defineStore('auth', {
       this.loading = true;
       this.error = null;
       try {
-        const res = await api.post(
-          '/api/auth/login',
-          credentials,
-          { withCredentials: true }
-        );
-        this.user = res.data.user;
-        this.accessToken = res.data.accessToken;
+        const res = await api.post('/api/auth/login', credentials);
+        
+        // Check verification status from response
+        if (!res.data.verified) {
+          this.error = 'Please verify your email before logging in. Check your inbox for the verification link.';
+          localStorage.setItem('pendingVerificationEmail', credentials.email);
+          return false;
+        }
+
+        this.user = { id: res.data.id, email: res.data.email };
+        this.accessToken = res.data.token;
         this.isAuthenticated = true;
         router.push('/dashboard');
         return true;
@@ -162,6 +166,18 @@ export const useAuthStore = defineStore('auth', {
       }
     },
     async resendVerification(email: string) {
+      this.loading = true;
+      this.error = null;
+      try {
+        const response = await api.post('/api/auth/resend-verification', { email });
+        this.error = 'SUCCESS: ' + response.data.message;
+        return true;
+      } catch (err: any) {
+        this.error = err.response?.data?.message || 'Failed to resend verification email';
+        return false;
+      } finally {
+        this.loading = false;
+      } {
       this.loading = true;
       // Don't clear error here to maintain context about verification needs
       try {
