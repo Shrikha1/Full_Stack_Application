@@ -44,7 +44,8 @@ export const salesforceController = {
         .execute();
       return res.status(200).json({ accounts: result, page, pageSize, total });
     } catch (error) {
-      // Never expose secrets or stack traces
+      // Log the real Salesforce error for debugging
+      console.error('SALESFORCE ERROR:', error);
       return res.status(500).json({ message: 'Failed to fetch Salesforce accounts', code: 'SALESFORCE_ERROR' });
     }
   },
